@@ -3,6 +3,7 @@ import numpy as np
 from rdkit.Chem import MACCSkeys
 from rdkit.Chem import AllChem as Chem
 from rdkit.Chem import rdMolDescriptors
+from pathlib import Path
 
 
 def maccs(mol):
@@ -87,13 +88,11 @@ def rdMolDes(mol):
         return None
 
 
-def get_fp(name):
+def get_fp(name, sdf_path='./sdf'):
     """ Function to get fingerprint from a list of SMILES"""
     fingerprints = []
-    Activity=[]
     smiles = []
-    sdFile = Chem.SDMolSupplier("sdf/{}.sdf".format(name))
-
+    sdFile = Chem.SDMolSupplier(f'{sdf_path}/{name}.sdf')
     inchikey =[]
     for mol in sdFile:
 
@@ -124,12 +123,12 @@ def get_fp(name):
             print('error')
 
 
-    return fingerprints, Activity, smiles
+    return fingerprints, smiles
 
 
-def clean(name):
-    mergedSDF_OUT = Chem.SDWriter('./sdf/{}.sdf'.format(name))
-    df = pd.read_csv('../data/{}.csv'.format(name))
+def clean(name, sdf_path='./sdf', csv_path='../data'):
+    mergedSDF_OUT = Chem.SDWriter(f'{sdf_path}/{name}.sdf')
+    df = pd.read_csv(f'{csv_path}/{name}.csv')
     for index, row in df.iterrows():
         try:
             mol = Chem.MolFromSmiles(row['SMILES'])
@@ -139,21 +138,37 @@ def clean(name):
     mergedSDF_OUT.close()
 
 
-names =[
-    'EGFR_RNN',
-    'EGFR_Transformer',
-    'HTR1A_RNN',
-    'HTR1A_Transformer',
-    'S1PR1_RNN',
-    'S1PR1_Transformer',
-]
+# names =[
+#     'EGFR_RNN',
+#     'EGFR_Transformer',
+#     'HTR1A_RNN',
+#     'HTR1A_Transformer',
+#     'S1PR1_RNN',
+#     'S1PR1_Transformer',
+# ]
 
-for name in names:
-    clean(name)
-    fingers, activities, smiles1 = get_fp(name)
+# for name in names:
+#     clean(name)
+#     fingers, activities, smiles1 = get_fp(name)
+#     res = pd.DataFrame(fingers, columns=list(range(2533))).astype('float')
+#     df = pd.DataFrame({'SMILES':smiles1})
+#     df.to_csv('smiles/{}.smi'.format(name),index=False)
+#     fp_array = res.to_numpy()
+#     label = np.array(activities)
+#     np.save('npy/{}_X.npy'.format(name),fp_array)
+
+# Compare no-target to single-target conditional generation
+gen_mols_folder = Path('../generated_molecules').resolve()
+sdf_folder = gen_mols_folder / 'sdf'
+
+targets = ['Unconditional', 'EGFR', 'HTR1A', 'S1PR1']
+
+for target in targets:
+    clean(target, sdf_path=sdf_folder, csv_path=gen_mols_folder)
+
+    fingers, smiles1 = get_fp(target, sdf_path=sdf_folder)
     res = pd.DataFrame(fingers, columns=list(range(2533))).astype('float')
     df = pd.DataFrame({'SMILES':smiles1})
-    df.to_csv('smiles/{}.smi'.format(name),index=False)
+    df.to_csv(gen_mols_folder / f'smiles/{target}.smi', index=False)
     fp_array = res.to_numpy()
-    label = np.array(activities)
-    np.save('npy/{}_X.npy'.format(name),fp_array)
+    np.save(gen_mols_folder / f'npy/{target}_X.npy', fp_array)

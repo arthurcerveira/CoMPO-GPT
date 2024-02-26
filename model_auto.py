@@ -79,7 +79,33 @@ class Seq2SeqTransformer(nn.Module):
         return self.transformer_decoder(self.positional_encoding(
                           self.tgt_tok_emb(tgt)), memory,
                           tgt_mask)
+    
+    def decode_exclude(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor, exclude_target: Tensor):
+        s, b = tgt.size()
+        memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
 
+        exclude_memory = self.emb(exclude_target).unsqueeze(0).repeat(s, 1, 1)
+        memory_diff = memory - exclude_memory
+
+        breakpoint()
+
+        return self.transformer_decoder(self.positional_encoding(
+                          self.tgt_tok_emb(tgt)), memory_diff,
+                          tgt_mask)
+
+    def decode_multitarget(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor):
+        s, b = tgt.size()
+        memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
+
+        pooled_memory = memory.mean(dim=1).unsqueeze(1)  # .repeat(1, b, 1)
+
+        # print("multi-target")
+
+        # import ipdb; ipdb.set_trace()
+
+        return self.transformer_decoder(self.positional_encoding(
+                          self.tgt_tok_emb(tgt)), pooled_memory,
+                          tgt_mask)
 
 
 ######################################################################

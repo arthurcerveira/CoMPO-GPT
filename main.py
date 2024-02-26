@@ -29,6 +29,8 @@ from torch import Tensor
 import io
 import time
 from topk import topk_filter
+from tqdm import tqdm
+import pandas as pd
 
 torch.manual_seed(0)
 
@@ -93,7 +95,7 @@ def train_epoch(model, train_iter, optimizer):
     print('====> Epoch: {0} total loss: {1:.4f}.'.format(epoch, losses))
     return losses / len(train_iter)
 
-def greedy_decode(model, max_len, start_symbol, target):
+def greedy_decode(model, max_len, start_symbol, target, exclude_target=None):
     #memory = torch.zeros(40, 512, 512).to('cuda')
     #memory = model.encode(src, src_mask)
     ys = torch.ones(1, 1).fill_(start_symbol).type(torch.long).to(device)
@@ -107,12 +109,18 @@ def greedy_decode(model, max_len, start_symbol, target):
             _target = torch.zeros((b), dtype=torch.int32).to(device)
         else:
             _target = (torch.ones((b), dtype=torch.int32)*target).to(device)
+
+        # breakpoint()
         #memory = torch.zeros(s, b, FFD).to('cuda')
         #memory = memory.to(device)
         #memory_mask = torch.zeros(ys.shape[0], memory.shape[0]).to(device).type(torch.bool)
         tgt_mask = (generate_square_subsequent_mask(ys.size(0))
                                     .type(torch.bool)).to(device)
-        out = model.decode(ys, tgt_mask, _target)
+        if exclude_target is not None:
+            out = model.decode(ys, tgt_mask, _target)
+        else:
+            out = model.decode_exclude(ys, tgt_mask, _target)
+        
         out = out.transpose(0, 1)
         prob = model.generator(out[:, -1]) #[b, vocab_size]
         pred_proba_t = topk_filter(prob, top_k=30) #[b, vocab_size]
@@ -126,6 +134,62 @@ def greedy_decode(model, max_len, start_symbol, target):
           break
     return ys
 
+
+def greedy_decode_multitarget(model, max_len, start_symbol, targets):
+    #memory = torch.zeros(40, 512, 512).to('cuda')
+    #memory = model.encode(src, src_mask)
+    ys = torch.ones(1, 1).fill_(start_symbol).type(torch.long).to(device)
+    for i in range(max_len-1):
+        #s, b = ys.size()
+        # batch_size = 1
+        b = 1
+        s = max_len
+        FFD = 512
+
+        _targets = torch.tensor(targets, dtype=torch.int32).to(device)
+
+        # breakpoint()
+
+        tgt_mask = (generate_square_subsequent_mask(ys.size(0))
+                                    .type(torch.bool)).to(device)
+        out = model.decode_multitarget(ys, tgt_mask, _targets)
+        out = out.transpose(0, 1)
+        prob = model.generator(out[:, -1]) #[b, vocab_size]
+        pred_proba_t = topk_filter(prob, top_k=30) #[b, vocab_size]
+        probs = pred_proba_t.softmax(dim=1) #[b, vocab_size]
+        next_word = torch.multinomial(probs, 1)
+        #_, next_word = torch.max(prob, dim = 1)
+        next_word = next_word.item()
+        ys = torch.cat([ys,
+                        torch.ones(1, 1).type_as(ys.data).fill_(next_word)], dim=0)
+        if next_word == EOS_IDX:
+          break
+
+    return ys
+
+
+def generate_n_sequences(model, n, max_len, start_symbol, target, file_path, multi_target=False):
+    """
+    Generate n sequences of SMILES and save them to a file
+    """
+    smiles = []
+    for _ in tqdm(range(n)):
+        if multi_target:
+            ybar = greedy_decode_multitarget(
+                model, max_len, start_symbol, target
+            ).flatten()
+        else:
+            ybar = greedy_decode(model, max_len, start_symbol, target).flatten()
+
+        ybar = mv.SMILESTokenizer().untokenize(vocabulary.decode(ybar.to('cpu').data.numpy()))
+        smiles.append(ybar)
+
+    smiles_df = pd.DataFrame(smiles, columns=['SMILES'])
+    smiles_df.to_csv(file_path, index=False, header=True)
+    
+    print(f"Generated {n} sequences and saved to {file_path}")
+
+
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--mode', choices=['train', 'infer', 'baseline', 'finetune'],\
@@ -138,6 +202,14 @@ if __name__ == '__main__':
     arg_parser.add_argument('--path', default='model_chem.h5', type=str)
     arg_parser.add_argument('--datamode', default=1, type=int)
     arg_parser.add_argument('--target', default=1, type=int)
+
+    # List of targets for inference
+    arg_parser.add_argument('--infer_targets', nargs='+', type=int)
+    # Number of molecules to generate for inference
+    arg_parser.add_argument('--num_molecules', default=100, type=int)
+    # Path to save generated molecules
+    arg_parser.add_argument('--output_path', default='generated_molecules.csv', type=str)
+
     arg_parser.add_argument('--d_model', default=512, type=int)
     arg_parser.add_argument('--nhead', default=8, type=int)
     arg_parser.add_argument('--embedding_size', default=200, type=int)
@@ -271,12 +343,43 @@ if __name__ == '__main__':
         device = args.device
         transformer.to(device)
         transformer.eval()
-        _target = args.target
-        print('Target: {0}'.format(_target))
-        for i in range(3):
-            ybar = greedy_decode(transformer, max_len=100, start_symbol=BOS_IDX, target=_target).flatten()
-            #print(ybar)
-            ybar = mv.SMILESTokenizer().untokenize(vocabulary.decode(ybar.to('cpu').data.numpy()))
-            #print('prediction')
-            print(ybar)
+
+        if args.infer_targets:
+            _targets = args.infer_targets
+            
+            print('multi-target: {0}'.format(_targets))
+
+            generate_n_sequences(
+                transformer,
+                args.num_molecules, 
+                100, BOS_IDX, _targets, 
+                args.output_path,
+                multi_target=True
+            )
+        else:
+            _target = args.target
+
+            print('single-target: {0}'.format(_target))
+
+            generate_n_sequences(
+                transformer,
+                args.num_molecules, 
+                100, BOS_IDX, _target, 
+                args.output_path
+            )
+        #     _targets = args.infer_targets
+        #     for i in range(3):
+        #         ybar = greedy_decode_multitarget(
+        #             transformer, max_len=100, start_symbol=BOS_IDX, targets=_targets
+        #         ).flatten()
+        #         ybar = mv.SMILESTokenizer().untokenize(vocabulary.decode(ybar.to('cpu').data.numpy()))
+        #         print(ybar)
+        # else:
+        #     print('Target: {0}'.format(_target))
+        #     for i in range(3):
+        #         ybar = greedy_decode(transformer, max_len=100, start_symbol=BOS_IDX, target=_target).flatten()
+        #         #print(ybar)
+        #         ybar = mv.SMILESTokenizer().untokenize(vocabulary.decode(ybar.to('cpu').data.numpy()))
+        #         #print('prediction')
+        #         print(ybar)
        
