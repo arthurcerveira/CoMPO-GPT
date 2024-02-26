@@ -87,7 +87,7 @@ class Seq2SeqTransformer(nn.Module):
         exclude_memory = self.emb(exclude_target).unsqueeze(0).repeat(s, 1, 1)
         memory_diff = memory - exclude_memory
 
-        breakpoint()
+        # breakpoint()
 
         return self.transformer_decoder(self.positional_encoding(
                           self.tgt_tok_emb(tgt)), memory_diff,
