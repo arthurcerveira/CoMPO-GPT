@@ -93,13 +93,18 @@ class Seq2SeqTransformer(nn.Module):
                           self.tgt_tok_emb(tgt)), memory_diff,
                           tgt_mask)
 
-    def decode_multitarget(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor):
+    def decode_multitarget(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor, aggregate_fn='mean'):
         s, b = tgt.size()
         memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
 
-        pooled_memory = memory.mean(dim=1).unsqueeze(1)  # .repeat(1, b, 1)
-
-        # print("multi-target")
+        if aggregate_fn == 'mean':
+            pooled_memory = memory.mean(dim=1).unsqueeze(1)  # .repeat(1, b, 1)
+        elif aggregate_fn == 'max':
+            pooled_memory = memory.max(dim=1).values.unsqueeze(1)
+        elif aggregate_fn == 'sum':
+            pooled_memory = memory.sum(dim=1).unsqueeze(1)
+        else:
+            raise ValueError(f"Invalid aggregate_fn: {aggregate_fn}")
 
         # import ipdb; ipdb.set_trace()
 

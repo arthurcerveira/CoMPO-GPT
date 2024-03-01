@@ -161,9 +161,22 @@ def clean(name, sdf_path='./sdf', csv_path='../data'):
 gen_mols_folder = Path('../generated_molecules').resolve()
 sdf_folder = gen_mols_folder / 'sdf'
 
-targets = ['Unconditional', 'EGFR', 'HTR1A', 'S1PR1']
+targets = [
+    # 'Unconditional', 'EGFR', 'HTR1A', 'S1PR1',
+    # Multi-target
+    # "EFGR_HTR1A_AVG", "EFGR_S1PR1_AVG", 
+    # "HTR1A_S1PR1_AVG",
+    # "EGFR_HTR1A_SUM", "EGFR_S1PR1_SUM", 
+    # "HTR1A_S1PR1_SUM",
+    "EGFR_HTR1A_MAX", "EGFR_S1PR1_MAX", 
+    "HTR1A_S1PR1_MAX",
+    # Target exclusion
+    # "Unconditional-EFGR-DIFF",
+    # "EGFR-Unconditional-DIFF",
+]
 
 for target in targets:
+    print(f"Processing {target}")
     clean(target, sdf_path=sdf_folder, csv_path=gen_mols_folder)
 
     fingers, smiles1 = get_fp(target, sdf_path=sdf_folder)

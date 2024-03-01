@@ -136,7 +136,7 @@ def greedy_decode(model, max_len, start_symbol, target, exclude_target=None):
     return ys
 
 
-def greedy_decode_multitarget(model, max_len, start_symbol, targets):
+def greedy_decode_multitarget(model, max_len, start_symbol, targets, aggregate_function):
     #memory = torch.zeros(40, 512, 512).to('cuda')
     #memory = model.encode(src, src_mask)
     ys = torch.ones(1, 1).fill_(start_symbol).type(torch.long).to(device)
@@ -153,7 +153,7 @@ def greedy_decode_multitarget(model, max_len, start_symbol, targets):
 
         tgt_mask = (generate_square_subsequent_mask(ys.size(0))
                                     .type(torch.bool)).to(device)
-        out = model.decode_multitarget(ys, tgt_mask, _targets)
+        out = model.decode_multitarget(ys, tgt_mask, _targets, aggregate_function)
         out = out.transpose(0, 1)
         prob = model.generator(out[:, -1]) #[b, vocab_size]
         pred_proba_t = topk_filter(prob, top_k=30) #[b, vocab_size]
@@ -169,7 +169,8 @@ def greedy_decode_multitarget(model, max_len, start_symbol, targets):
     return ys
 
 
-def generate_n_sequences(model, n, max_len, start_symbol, target, file_path, multi_target=False, exclude_target=None):
+def generate_n_sequences(model, n, max_len, start_symbol, target, file_path, 
+                         multi_target=False, exclude_target=None, aggregate_function='mean'):
     """
     Generate n sequences of SMILES and save them to a file
     """
@@ -177,7 +178,7 @@ def generate_n_sequences(model, n, max_len, start_symbol, target, file_path, mul
     for _ in tqdm(range(n)):
         if multi_target:
             ybar = greedy_decode_multitarget(
-                model, max_len, start_symbol, target
+                model, max_len, start_symbol, target, aggregate_function
             ).flatten()
         else:
             ybar = greedy_decode(model, max_len, start_symbol, target, exclude_target).flatten()
@@ -206,6 +207,8 @@ if __name__ == '__main__':
 
     # List of targets for inference
     arg_parser.add_argument('--infer_targets', nargs='+', type=int)
+    # Multivariative function to aggregate target embeddings
+    arg_parser.add_argument('--multivariate', default='mean', type=str)
     # Number of molecules to generate for inference
     arg_parser.add_argument('--num_molecules', default=100, type=int)
     # Path to save generated molecules
@@ -351,19 +354,21 @@ if __name__ == '__main__':
             _targets = args.infer_targets
             
             print('multi-target: {0}'.format(_targets))
+            print('aggregate-function: {0}'.format(args.multivariate))
 
             generate_n_sequences(
                 transformer,
                 args.num_molecules, 
                 100, BOS_IDX, _targets, 
                 args.output_path,
-                multi_target=True
+                multi_target=True,
+                aggregate_function=args.multivariate
             )
         else:
             _target = args.target
 
             print('single-target: {0}'.format(_target))
-            if args.exclude_target:
+            if args.exclude_target is not None:
                 print('exclude-target: {0}'.format(args.exclude_target))
 
             generate_n_sequences(
