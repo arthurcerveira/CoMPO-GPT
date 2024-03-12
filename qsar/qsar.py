@@ -37,6 +37,8 @@ rmse_test = np.sqrt(mse_test)
 print(mse_test)
 print(R_test)
 
+# save the model to disk
+model.booster_.save_model('model/{}.txt'.format(name))
 
 # X_rnn = np.load('./npy/{}_RNN_X.npy'.format(name))
 # Y_rnn_pred = model.predict(X_rnn)
