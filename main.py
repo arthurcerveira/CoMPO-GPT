@@ -28,11 +28,18 @@ from collections import Counter
 from torch import Tensor
 import io
 import time
-from topk import topk_filter
 from tqdm import tqdm
 import pandas as pd
 
 torch.manual_seed(0)
+
+def topk_filter(scores: torch.FloatTensor, top_k: int = 0, filter_value: float = -float("Inf"), min_tokens_to_keep: int = 1):
+    top_k = min(max(top_k, min_tokens_to_keep), scores.size(-1))  # Safety check
+     # Remove all tokens with a probability less than the last token of the top-k
+    indices_to_remove = scores < torch.topk(scores, top_k)[0][..., -1, None]
+    scores = scores.masked_fill(indices_to_remove, filter_value)
+    return scores
+
 
 def evaluate(model, valid_iter):
     model.eval()
@@ -198,12 +205,14 @@ if __name__ == '__main__':
         default='train',help='Run mode')
     arg_parser.add_argument('--device', choices=['cuda', 'cpu'],\
         default='cuda',help='Device')
-    arg_parser.add_argument('--epoch', default='100', type=int)
+    arg_parser.add_argument('--epoch', default='30', type=int)
     arg_parser.add_argument('--batch_size', default='512', type=int)
     arg_parser.add_argument('--layer', default=3, type=int)
     arg_parser.add_argument('--path', default='model_chem.h5', type=str)
+    arg_parser.add_argument('--path_ft', default='model_chem_finetune.h5', type=str)
     arg_parser.add_argument('--datamode', default=1, type=int)
     arg_parser.add_argument('--target', default=1, type=int)
+    arg_parser.add_argument('--finetune_dataset', default='data/active_compounds.smi', type=str)
 
     # List of targets for inference
     arg_parser.add_argument('--infer_targets', nargs='+', type=int)
@@ -230,10 +239,11 @@ if __name__ == '__main__':
     #training_sets = load_sets('zinc/zinc.smi')
     #dataset = md.DecoratorDataset(training_sets, vocabulary=vocabulary)
 
-    mol_list0_train = list(read_delimited_file('train.smi'))
-    mol_list0_test = list(read_delimited_file('test.smi'))
+    mol_list0_train = list(read_delimited_file('data/train.smi'))
+    mol_list0_test = list(read_delimited_file('data/test.smi'))
     
-    mol_list1, target_list = zip(*read_csv_file('mol_target_dataloader/target.smi', num_fields=2))
+    # mol_list1, target_list = zip(*read_csv_file('mol_target_dataloader/target.smi', num_fields=2))
+    mol_list1, target_list = zip(*read_csv_file(args.finetune_dataset, num_fields=2))
     mol_list = mol_list0_train
     mol_list.extend(mol_list0_test) 
     mol_list.extend(mol_list1)
@@ -267,7 +277,6 @@ if __name__ == '__main__':
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
 
-    
     #num_train= int(len(dataset)*0.8)
     #num_test= len(dataset) -num_train
     #train_data, test_data = torch.utils.data.random_split(dataset, [num_train, num_test])
@@ -312,7 +321,7 @@ if __name__ == '__main__':
         from mol_target_dataloader.utils import read_csv_file
         import mol_target_dataloader.dataset as md
 
-        mol_list1, target_list = zip(*read_csv_file('Mol_target_dataloader/target.smi', num_fields=2))
+        mol_list1, target_list = zip(*read_csv_file(args.finetune_dataset, num_fields=2))
         #vocabulary = mv.create_vocabulary(smiles_list=mol_list, tokenizer=mv.SMILESTokenizer())
         finetune_dataset = md.Dataset(mol_list1, target_list, vocabulary, mv.SMILESTokenizer())
         num_train= int(len(finetune_dataset)*0.8)
@@ -330,17 +339,19 @@ if __name__ == '__main__':
             train_loss = train_epoch(transformer, train_iter, optimizer)
             scheduler.step()
             end_time = time.time()
+            torch.cuda.empty_cache()
+
             if (epoch+1)%1==0:
                 val_loss = evaluate(transformer, val_iter)
                 if val_loss < min_loss:
                     min_loss = val_loss
-                    torch.save(transformer.state_dict(), args.path)
+                    torch.save(transformer.state_dict(), args.path_ft)
                     print('Model saved!')
+                torch.cuda.empty_cache()
 
             print((f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val loss: {val_loss:.3f}, "
                 f"Epoch time = {(end_time - start_time):.3f}s"))
 
-        
     elif args.mode == 'infer':
         if args.device == 'cpu':
             transformer.load_state_dict(torch.load(args.path,  map_location=torch.device('cpu')))

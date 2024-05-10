@@ -162,12 +162,12 @@ gen_mols_folder = Path('../generated_molecules').resolve()
 sdf_folder = gen_mols_folder / 'sdf'
 
 targets = [
-    # 'Unconditional', 'EGFR', 'HTR1A', 'S1PR1',
+    'Unconditional', 'EGFR', 'HTR1A', 'S1PR1',
     # Multi-target
-    # "EFGR_HTR1A_AVG", "EFGR_S1PR1_AVG", 
-    # "HTR1A_S1PR1_AVG",
-    # "EGFR_HTR1A_SUM", "EGFR_S1PR1_SUM", 
-    # "HTR1A_S1PR1_SUM",
+    "EGFR_HTR1A_AVG", "EGFR_S1PR1_AVG", 
+    "HTR1A_S1PR1_AVG",
+    "EGFR_HTR1A_SUM", "EGFR_S1PR1_SUM", 
+    "HTR1A_S1PR1_SUM",
     "EGFR_HTR1A_MAX", "EGFR_S1PR1_MAX", 
     "HTR1A_S1PR1_MAX",
     # Target exclusion

@@ -1,4 +1,12 @@
-__pycache__/
+__pycache__
 __MACOSX
 *.npy
 *.sdf
+*/.github
+*.egg-info
+
+models_chemprop/*-checkpoint
+generated_molecules/*_MAX.csv
+generated_molecules/*_MEAN.csv
+generated_molecules/*/*_MAX.csv
+generated_molecules/*/*_MEAN.csv

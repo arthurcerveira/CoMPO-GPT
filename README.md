@@ -1,3 +1,15 @@
+# Steps
+
+1. Generate datasets: `scripts/Split-Fine-Tuning-QSAR-Datasets.ipynb`
+2. Fine-tune the model: `scripts/fine-tuning.sh`
+3. Single-target molecule generation: `scripts/single-target-generation.sh`
+4. Multi-target molecule generation: `scripts/multi_target_generation.py`
+5. Train chemprop models: 
+- `scripts/train_chemprop.py`
+- `scripts/train_chemprop_pIC50.py`
+6. Predict chemprop models:
+- `scripts/predict_activity_chemprop.py`
+
 # cMolGPT 
 
 Implementation of ["cMolGPT: A Conditional Generative Pre-Trained Transformer for Target-Specific De Novo Molecular Generation"](https://pubmed.ncbi.nlm.nih.gov/37298906/).

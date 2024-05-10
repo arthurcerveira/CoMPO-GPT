@@ -7,8 +7,8 @@ from pathlib import Path
 
 
 # name = 'EGFR'
-# name = 'HTR1A'
-name = 'S1PR1'
+name = 'HTR1A'
+# name = 'S1PR1'
 X = np.load('npy/{}_X.npy'.format(name))
 y = np.load('npy/{}_y.npy'.format(name))
 print(X.shape)
@@ -50,19 +50,19 @@ model.booster_.save_model('model/{}.txt'.format(name))
 
 npy_folder = Path('../generated_molecules/npy').resolve()
 
-# X_unconditional = np.load(npy_folder / 'Unconditional_X.npy')
-# Y_unconditional_pred = model.predict(X_unconditional)
-# np.save(npy_folder / f'{name}_Unconditional_Y.npy', Y_unconditional_pred)
+X_unconditional = np.load(npy_folder / 'Unconditional_X.npy')
+Y_unconditional_pred = model.predict(X_unconditional)
+np.save(npy_folder / f'{name}_Unconditional_Y.npy', Y_unconditional_pred)
 
-# X_trans = np.load(npy_folder / f'{name}_X.npy')
-# Y_trans_pred = model.predict(X_trans)
-# np.save(npy_folder / f'{name}_Conditional_Y.npy', Y_trans_pred)
+X_trans = np.load(npy_folder / f'{name}_X.npy')
+Y_trans_pred = model.predict(X_trans)
+np.save(npy_folder / f'{name}_Conditional_Y.npy', Y_trans_pred)
 
 # Assessment for multi-target conditional generation
 for agg in ('AVG', 'SUM', 'MAX'):
-    # X_multi = np.load(npy_folder / f'EGFR_HTR1A_{agg}_X.npy')
-    # Y_multi_pred = model.predict(X_multi)
-    # np.save(npy_folder / f'EGFR_HTR1A_{agg}_Y_{name}.npy', Y_multi_pred)
+    X_multi = np.load(npy_folder / f'EGFR_HTR1A_{agg}_X.npy')
+    Y_multi_pred = model.predict(X_multi)
+    np.save(npy_folder / f'EGFR_HTR1A_{agg}_Y_{name}.npy', Y_multi_pred)
 
     X_multi = np.load(npy_folder / f'EGFR_S1PR1_{agg}_X.npy')
     Y_multi_pred = model.predict(X_multi)

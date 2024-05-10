@@ -38,7 +38,8 @@ EOS_IDX = 2
 class Seq2SeqTransformer(nn.Module):
     def __init__(self, num_encoder_layers: int, num_decoder_layers: int,
                  emb_size: int, src_vocab_size: int, tgt_vocab_size: int,
-                 dim_feedforward:int = 512, dropout:float = 0.1, args = None):
+                 dim_feedforward:int = 512, dropout:float = 0.1, args = None,
+                 emb_input_size=7):
         super(Seq2SeqTransformer, self).__init__()
         encoder_layer = TransformerEncoderLayer(d_model=emb_size, nhead=args.nhead,
                                                 dim_feedforward=dim_feedforward)
@@ -54,7 +55,8 @@ class Seq2SeqTransformer(nn.Module):
         self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
         #self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
         self.positional_encoding = PositionalEncoding(emb_size, dropout=dropout)
-        self.emb = nn.Embedding(4, dim_feedforward, padding_idx=0) # number of targets + 1 (no target) = 4
+        # self.emb = nn.Embedding(4, dim_feedforward, padding_idx=0) # number of targets + 1 (no target) = 4
+        self.emb = nn.Embedding(emb_input_size, dim_feedforward, padding_idx=0) # number of targets + 1 (no target) = 7
 
     def forward(self, trg: Tensor, tgt_mask: Tensor, tgt_padding_mask: Tensor, target: Tensor):
         #src_emb = self.positional_encoding(self.src_tok_emb(src))
