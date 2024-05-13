@@ -1,14 +1,33 @@
-# Steps
+## Setup
 
-1. Generate datasets: `scripts/Split-Fine-Tuning-QSAR-Datasets.ipynb`
-2. Fine-tune the model: `scripts/fine-tuning.sh`
-3. Single-target molecule generation: `scripts/single-target-generation.sh`
-4. Multi-target molecule generation: `scripts/multi_target_generation.py`
+**Create `aidd` conda environment**
+
+1. `conda env create -f environment_a6000.yml`
+2. `pip install lightgbm ipykernel ipdb`
+
+**Create `chemprop` conda environment**
+
+1. `cd chemprop`
+2. `conda env create -f environment.yml`
+3. `conda activate chemprop`
+4. `pip install -e .`
+
+
+## Instructions
+
+**`conda activate aidd`**
+
+1. Generate datasets: `scripts/01-Split-Fine-Tuning-QSAR-Datasets.ipynb`
+2. Fine-tune the model: `scripts/02-fine-tuning.sh`
+3. Single-target molecule generation: `scripts/03-single-target-generation.sh`
+4. Multi-target molecule generation: `scripts/04-multi_target_generation.py`
+
+**`conda activate chemprop`**
+
 5. Train chemprop models: 
-- `scripts/train_chemprop.py`
-- `scripts/train_chemprop_pIC50.py`
-6. Predict chemprop models:
-- `scripts/predict_activity_chemprop.py`
+- `scripts/05-train_chemprop.py`
+- `scripts/06-train_chemprop_pIC50.py`
+6. Predict chemprop models: `scripts/07-predict_activity_chemprop.py`
 
 # cMolGPT 
 
