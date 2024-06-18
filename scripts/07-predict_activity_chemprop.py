@@ -46,7 +46,7 @@ for path in generated_mols_paths:
         arguments = [
             '--test_path', '/dev/null',
             '--preds_path', '/dev/null',
-            '--checkpoint_dir', f'../models_chemprop/{model}-pIC50-checkpoint'
+            '--checkpoint_dir', f'../models_chemprop/{model}-IC50-checkpoint'
         ]
         args = chemprop.args.PredictArgs().parse_args(arguments)
         preds = chemprop.train.make_predictions(args=args, smiles=smiles_input)

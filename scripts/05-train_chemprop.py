@@ -6,14 +6,14 @@ import os
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(CURRENT_DIR + "/..")
 
-targets = ["AChE", "D2R", "D3R", "_5HT2A", "MAOB", "BBB",]
+targets = ["AChE", "D2R", "D3R", "_5HT2A", "MAOB",] # "BBB",]
 
 # BD: brain disorders
 command_template = """
-    chemprop_train --data_path ./data/Bioassays/{target}_SMILES.csv \
+    chemprop_train --data_path ./data/Assays-Inhibition/{target}.tsv \
                    --dataset_type classification \
                    --save_dir ./models_chemprop/{target}-checkpoint \
-                   --smiles_column SMILES \
+                   --smiles_column smiles \
                    --target_columns activity
 """
 

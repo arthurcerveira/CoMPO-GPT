@@ -10,3 +10,5 @@ generated_molecules/*_MAX.csv
 generated_molecules/*_MEAN.csv
 generated_molecules/*/*_MAX.csv
 generated_molecules/*/*_MEAN.csv
+
+models_cMolGPT/*.h5_*

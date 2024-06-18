@@ -5,14 +5,23 @@ cd "$(dirname "$0")"/..
 pwd
 
 # For pre-training
-# python cMolGPT/main.py --mode train --batch_size 256 --epoch 100
+echo "python cMolGPT/main.py --mode train --batch_size 256 --epoch 100 \
+                       --path models_cMolGPT/base.h5 \
+                       --finetune_dataset data/chembl_active_compounds.smi"
 
+python cMolGPT/main.py --mode train --batch_size 256 --epoch 100 \
+                       --path models_cMolGPT/base.h5 \
+                       --finetune_dataset data/chembl_active_compounds.smi
+
+# For fine-tuning
 echo "python3 cMolGPT/main.py --batch_size 256 --mode finetune \
                 --path models_cMolGPT/base.h5 --loadmodel \
                 --path_ft models_cMolGPT/finetune.h5 \
-                --finetune_dataset data/active_compounds.smi"
+                --finetune_dataset data/chembl_active_compounds.smi \
+                --epoch 100"
 
 python3 cMolGPT/main.py --batch_size 256 --mode finetune \
                 --path models_cMolGPT/base.h5 --loadmodel \
                 --path_ft models_cMolGPT/finetune.h5 \
-                --finetune_dataset data/active_compounds.smi
+                --finetune_dataset data/chembl_active_compounds.smi \
+                --epoch 100
