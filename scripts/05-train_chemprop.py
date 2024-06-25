@@ -17,7 +17,20 @@ command_template = """
                    --target_columns activity
 """
 
+command_template_inhibition = """
+    chemprop_train --data_path ./data/Assays-Inhibition/{target}.tsv \
+                   --dataset_type regression \
+                   --save_dir ./models_chemprop/{target}-inhibition-checkpoint \
+                   --smiles_column smiles \
+                   --target_columns inhibition
+"""
+
+
 for target in targets:
-    command = command_template.format(target=target)
+    # command = command_template.format(target=target)
+    # print(command)
+    # subprocess.run(command, shell=True)
+
+    command = command_template_inhibition.format(target=target)
     print(command)
     subprocess.run(command, shell=True)

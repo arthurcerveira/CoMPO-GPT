@@ -343,6 +343,10 @@ if __name__ == '__main__':
             end_time = time.time()
             torch.cuda.empty_cache()
 
+            if (epoch+1)%10==0:
+                torch.save(transformer.state_dict(), args.path_ft+'_'+str(epoch+1))
+                print('Fine-tunned model saved every 10 epoches.')
+
             if (epoch+1)%1==0:
                 val_loss = evaluate(transformer, val_iter)
                 if val_loss < min_loss:
