@@ -14,12 +14,12 @@ targets_to_idx = {
     "MAOB": 5,
 }
 
-# bd: brain disorders
+model_path = "models_cMolGPT/finetune.h5_20"
 
 command_template = """
     python3 cMolGPT/main.py \
       --mode infer --infer_target {t1} {t2} \
-      --multivariate {agg} --path models_cMolGPT/finetune.h5 \
+      --multivariate {agg} --path {model_path} \
       --num_molecules 30000 \
       --output_path generated_molecules/{combination}_{agg_file}.csv
 """
@@ -34,7 +34,7 @@ target_combinations = (
 )
 
 # agg_functions = ("mean", "max") #, "sum")
-agg_functions = ("sum",)
+agg_functions = ("sum", "mean", "max")
 
 for combination, agg in itertools.product(target_combinations, agg_functions):
     t1 = targets_to_idx[combination[0]]
@@ -42,7 +42,7 @@ for combination, agg in itertools.product(target_combinations, agg_functions):
 
     command = command_template.format(
         t1=t1, t2=t2, agg=agg, combination="_".join(combination),
-        agg_file=agg.upper()
+        agg_file=agg.upper(), model_path=model_path
     )
     print(command)
     subprocess.run(command, shell=True)
