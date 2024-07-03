@@ -14,7 +14,7 @@ targets_to_idx = {
     "MAOB": 5,
 }
 
-model_path = "models_cMolGPT/finetune.h5_20"
+model_path = "models_cMolGPT/finetune.h5_70"
 
 command_template = """
     python3 cMolGPT/main.py \

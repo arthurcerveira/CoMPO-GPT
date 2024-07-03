@@ -7,7 +7,7 @@ pwd
 # list of target names
 targets=("Unconditional" "AChE" "D2R" "D3R" "_5HT2A" "MAOB" "BBB")
 
-model_path="models_cMolGPT/finetune.h5_20"
+model_path="models_cMolGPT/finetune.h5_70"
 
 # for each target, generate molecules based on index
 for i in {0..6}
