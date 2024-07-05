@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from rdkit import RDLogger
+import sys
 
 CURRENT_DIR = Path(__file__).resolve().parent
 os.chdir(CURRENT_DIR / "../chemprop")
@@ -14,7 +15,8 @@ import chemprop
 lg = RDLogger.logger()
 lg.setLevel(RDLogger.CRITICAL)
 
-PREDICTED_ACTIVITY_PATH = CURRENT_DIR / "../generated_molecules/predicted_activity/"
+EPOCH = 100 if len(sys.argv) < 2 else sys.argv[1]
+PREDICTED_ACTIVITY_PATH = CURRENT_DIR / ".." / "generated_molecules" / f"{EPOCH}-epoch" / "predicted_activity"
 
 # Multi-target prediction
 multitarget_combination = {

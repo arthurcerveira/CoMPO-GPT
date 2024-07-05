@@ -2,6 +2,7 @@ import subprocess
 import itertools
 # cd to the root of the project
 import os
+import sys
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(CURRENT_DIR + "/..")
@@ -14,14 +15,15 @@ targets_to_idx = {
     "MAOB": 5,
 }
 
-model_path = "models_cMolGPT/finetune.h5_70"
+EPOCH = 100 if len(sys.argv) < 2 else sys.argv[1]
+model_path = f"models_cMolGPT/finetune.h5_{EPOCH}"
 
 command_template = """
     python3 cMolGPT/main.py \
       --mode infer --infer_target {t1} {t2} \
       --multivariate {agg} --path {model_path} \
       --num_molecules 30000 \
-      --output_path generated_molecules/{combination}_{agg_file}.csv
+      --output_path generated_molecules/{epochs}-epoch/{combination}_{agg_file}.csv
 """
 
 target_combinations = (
@@ -42,7 +44,7 @@ for combination, agg in itertools.product(target_combinations, agg_functions):
 
     command = command_template.format(
         t1=t1, t2=t2, agg=agg, combination="_".join(combination),
-        agg_file=agg.upper(), model_path=model_path
+        agg_file=agg.upper(), model_path=model_path, epochs=EPOCH
     )
     print(command)
     subprocess.run(command, shell=True)

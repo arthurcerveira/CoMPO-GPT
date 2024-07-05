@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from rdkit import RDLogger
+import sys
 
 CURRENT_DIR = Path(__file__).resolve().parent
 os.chdir(CURRENT_DIR / "../chemprop")
@@ -14,7 +15,8 @@ import chemprop
 lg = RDLogger.logger()
 lg.setLevel(RDLogger.CRITICAL)
 
-GENERATED_MOLS_PATH = CURRENT_DIR / "../generated_molecules"
+EPOCH = 100 if len(sys.argv) < 2 else sys.argv[1]
+GENERATED_MOLS_PATH = CURRENT_DIR / ".." / "{EPOCH}-epoch" / "generated_molecules"
 
 models = ['AChE', 'D2R', 'D3R', '_5HT2A', 'MAOB'] #, 'BBB']
 generated_mols_paths = GENERATED_MOLS_PATH.glob('*.csv')
