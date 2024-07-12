@@ -16,7 +16,7 @@ lg = RDLogger.logger()
 lg.setLevel(RDLogger.CRITICAL)
 
 EPOCH = 100 if len(sys.argv) < 2 else sys.argv[1]
-GENERATED_MOLS_PATH = CURRENT_DIR / ".." / "{EPOCH}-epoch" / "generated_molecules"
+GENERATED_MOLS_PATH = CURRENT_DIR / ".." / "generated_molecules" / f"{EPOCH}-epoch"
 
 models = ['AChE', 'D2R', 'D3R', '_5HT2A', 'MAOB'] #, 'BBB']
 generated_mols_paths = GENERATED_MOLS_PATH.glob('*.csv')

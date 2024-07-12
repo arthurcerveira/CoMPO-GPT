@@ -24,12 +24,14 @@ mkdir -p generated_molecules/${epochs}-epoch
 for i in {0..6}
 do
     # If target is Unconditional, use models_cMolGPT/base.h5
-    if [ $i -eq 0 ]
-    then
-        model_path="models_cMolGPT/base.h5"
-    else
-        model_path="models_cMolGPT/finetune.h5_${epochs}"
-    fi
+    # if [ $i -eq 0 ]
+    # then
+    #     model_path="models_cMolGPT/base.h5"
+    # else
+    #     model_path="models_cMolGPT/finetune.h5_${epochs}"
+    # fi
+
+    model_path="models_cMolGPT/finetune.h5_${epochs}"
 
     # print target name
     echo "Generating molecules for target: ${targets[i]}"

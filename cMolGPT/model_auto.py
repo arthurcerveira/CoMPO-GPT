@@ -53,10 +53,16 @@ class Seq2SeqTransformer(nn.Module):
         self.generator = nn.Linear(emb_size, tgt_vocab_size)
         self.src_tok_emb = TokenEmbedding(src_vocab_size, emb_size)
         self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
-        #self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
+
         self.positional_encoding = PositionalEncoding(emb_size, dropout=dropout)
-        # self.emb = nn.Embedding(4, dim_feedforward, padding_idx=0) # number of targets + 1 (no target) = 4
         self.emb = nn.Embedding(emb_input_size, dim_feedforward, padding_idx=0) # number of targets + 1 (no target) = 7
+
+        self.params = nn.ModuleDict({
+            'conditional': nn.ModuleList([self.emb]),
+            'generation': nn.ModuleList([
+                self.transformer_decoder, self.positional_encoding, self.tgt_tok_emb, self.generator
+            ])
+        })
 
     def forward(self, trg: Tensor, tgt_mask: Tensor, tgt_padding_mask: Tensor, target: Tensor):
         #src_emb = self.positional_encoding(self.src_tok_emb(src))
@@ -81,7 +87,7 @@ class Seq2SeqTransformer(nn.Module):
         return self.transformer_decoder(self.positional_encoding(
                           self.tgt_tok_emb(tgt)), memory,
                           tgt_mask)
-    
+
     def decode_exclude(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor, exclude_target: Tensor):
         s, b = tgt.size()
         memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)

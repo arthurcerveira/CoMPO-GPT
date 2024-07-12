@@ -286,9 +286,17 @@ if __name__ == '__main__':
 
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=PAD_IDX)
 
-    optimizer = torch.optim.Adam(
-        transformer.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9
-    )
+    # If fine-tuning, set different optimizers for the embeddings and the rest of the model
+    if args.mode == 'finetune':
+        optimizer = torch.optim.Adam([
+            {'params': transformer.params["conditional"].parameters(), 'lr': 3e-4},
+            {'params': transformer.params["generation"].parameters(), 'lr': 1e-4}
+        ], betas=(0.9, 0.98), eps=1e-9)
+    else:
+        optimizer = torch.optim.Adam(
+            transformer.parameters(), lr=1e-4, betas=(0.9, 0.98), eps=1e-9
+        )
+
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.95) 
     if args.mode == 'train':
         transformer = transformer.to(DEVICE)

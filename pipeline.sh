@@ -1,6 +1,6 @@
 #!/bin/sh
 
-epochs=30
+epochs=100
 
 eval "$(conda shell.bash hook)"
 conda activate aidd
@@ -8,6 +8,7 @@ conda activate aidd
 bash scripts/03-single-target-generation.sh $epochs
 python scripts/04-multi_target_generation.py $epochs
 
+eval "$(conda shell.bash hook)"
 conda activate chemprop
 
 python scripts/07-predict_activity_chemprop.py $epochs
