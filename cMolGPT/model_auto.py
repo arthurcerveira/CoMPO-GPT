@@ -41,13 +41,12 @@ class Seq2SeqTransformer(nn.Module):
                  dim_feedforward:int = 512, dropout:float = 0.1, args = None,
                  emb_input_size=7):
         super(Seq2SeqTransformer, self).__init__()
-        encoder_layer = TransformerEncoderLayer(d_model=emb_size, nhead=args.nhead,
-                                                dim_feedforward=dim_feedforward)
-        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
+        # encoder_layer = TransformerEncoderLayer(d_model=emb_size, nhead=args.nhead,
+        #                                         dim_feedforward=dim_feedforward)
+        # self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
         decoder_layer = TransformerDecoderLayer(d_model=emb_size, nhead=args.nhead,
                                                 dim_feedforward=dim_feedforward)
         self.transformer_decoder = TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
-        
 
         tgt_vocab_size = src_vocab_size        
         self.generator = nn.Linear(emb_size, tgt_vocab_size)
@@ -57,8 +56,17 @@ class Seq2SeqTransformer(nn.Module):
         self.positional_encoding = PositionalEncoding(emb_size, dropout=dropout)
         self.emb = nn.Embedding(emb_input_size, dim_feedforward, padding_idx=0) # number of targets + 1 (no target) = 7
 
+        # Additional feedforward layer
+        # self.ffn = nn.Sequential(
+        #     nn.Linear(dim_feedforward, dim_feedforward),
+        #     nn.ReLU(),
+        #     nn.Dropout(dropout),
+        #     nn.Linear(dim_feedforward, emb_size)
+        # )
+
         self.params = nn.ModuleDict({
-            'conditional': nn.ModuleList([self.emb]),
+            # 'conditional': nn.ModuleList([self.emb, self.ffn]),
+            'conditional': nn.ModuleList([self.emb]),  # , self.ffn]),
             'generation': nn.ModuleList([
                 self.transformer_decoder, self.positional_encoding, self.tgt_tok_emb, self.generator
             ])
@@ -71,7 +79,11 @@ class Seq2SeqTransformer(nn.Module):
         s, b = trg.size()
         #memory = torch.zeros(s, b, 512).to('cuda')
         #print(target.size())
+        # memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
+
         memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
+        # memory = self.ffn(memory)
+
         #print(memory.size())
         outs = self.transformer_decoder(tgt_emb, memory, tgt_mask, None,
                                         tgt_padding_mask)
@@ -83,17 +95,22 @@ class Seq2SeqTransformer(nn.Module):
 
     def decode(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor):
         s, b = tgt.size()
+
         memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
+        # memory = self.ffn(memory)  # Apply the additional feedforward layer
+
         return self.transformer_decoder(self.positional_encoding(
                           self.tgt_tok_emb(tgt)), memory,
                           tgt_mask)
 
     def decode_exclude(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor, exclude_target: Tensor):
         s, b = tgt.size()
-        memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
 
+        memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
         exclude_memory = self.emb(exclude_target).unsqueeze(0).repeat(s, 1, 1)
+
         memory_diff = memory - exclude_memory
+        # memory_diff = self.ffn(memory_diff)
 
         return self.transformer_decoder(self.positional_encoding(
                           self.tgt_tok_emb(tgt)), memory_diff,
@@ -112,7 +129,7 @@ class Seq2SeqTransformer(nn.Module):
         else:
             raise ValueError(f"Invalid aggregate_fn: {aggregate_fn}")
 
-        # import ipdb; ipdb.set_trace()
+        # pooled_memory = self.ffn(pooled_memory)
 
         return self.transformer_decoder(self.positional_encoding(
                           self.tgt_tok_emb(tgt)), pooled_memory,
