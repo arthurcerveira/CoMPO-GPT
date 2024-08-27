@@ -41,9 +41,6 @@ class Seq2SeqTransformer(nn.Module):
                  dim_feedforward:int = 512, dropout:float = 0.1, args = None,
                  emb_input_size=7):
         super(Seq2SeqTransformer, self).__init__()
-        # encoder_layer = TransformerEncoderLayer(d_model=emb_size, nhead=args.nhead,
-        #                                         dim_feedforward=dim_feedforward)
-        # self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
         decoder_layer = TransformerDecoderLayer(d_model=emb_size, nhead=args.nhead,
                                                 dim_feedforward=dim_feedforward)
         self.transformer_decoder = TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
@@ -66,7 +63,7 @@ class Seq2SeqTransformer(nn.Module):
 
         self.params = nn.ModuleDict({
             # 'conditional': nn.ModuleList([self.emb, self.ffn]),
-            'conditional': nn.ModuleList([self.emb]),  # , self.ffn]),
+            'conditional': nn.ModuleList([self.emb]),
             'generation': nn.ModuleList([
                 self.transformer_decoder, self.positional_encoding, self.tgt_tok_emb, self.generator
             ])
