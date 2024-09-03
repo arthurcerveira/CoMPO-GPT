@@ -81,6 +81,23 @@ for combination in multitarget_combination:
             preds = chemprop.train.make_predictions(args=args, smiles=smiles_input)
 
             activity_df[f"{model}_inhibition"] = np.array(preds).flatten()
+        
+        for model in models:
+            if f"{model}_pXC50" in activity_df.columns:
+                print(f"Skipping {model} - pXC50")
+                continue
+
+            print(f"Running inference for {model} - pXC50")
+            arguments = [
+                '--test_path', '/dev/null',
+                '--preds_path', '/dev/null',
+                '--checkpoint_dir', f'../models_chemprop/{model}-pXC50-checkpoint'
+            ]
+
+            args = chemprop.args.PredictArgs().parse_args(arguments)
+            preds = chemprop.train.make_predictions(args=args, smiles=smiles_input)
+
+            activity_df[f"{model}_pXC50"] = np.array(preds).flatten()
 
         # Replace 'Invalid SMILES' with NaN for Activity and Inhibition
         activity_df = activity_df.replace('Invalid SMILES', np.nan)
@@ -95,11 +112,13 @@ for combination in multitarget_combination:
         activity_df[f"{combination}_inhibition"] = activity_df[
             [f"{model}_inhibition" for model in models]
         ].mean(axis=1, skipna=True)
+        activity_df[f"{combination}_pXC50"] = activity_df[
+            [f"{model}_pXC50" for model in models]
+        ].mean(axis=1, skipna=True)
     
         # Save the updated dataframe to new path
         new_path = PREDICTED_ACTIVITY_PATH / f"{path.stem}.csv"
         activity_df.to_csv(new_path, index=False)
-
 
 # Unconditional
 print("Processing Unconditional")
@@ -124,6 +143,9 @@ for combination in multitarget_combination:
     ].mean(axis=1, skipna=True)
     unconditional_df[f"{combination}_inhibition"] = unconditional_df[
         [f"{model}_inhibition" for model in models]
+    ].mean(axis=1, skipna=True)
+    unconditional_df[f"{combination}_pXC50"] = unconditional_df[
+        [f"{model}_pXC50" for model in models]
     ].mean(axis=1, skipna=True)
 
     # Save the updated dataframe to new path

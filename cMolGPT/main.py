@@ -212,7 +212,8 @@ if __name__ == '__main__':
     arg_parser.add_argument('--path_ft', default='model_chem_finetune.h5', type=str)
     arg_parser.add_argument('--datamode', default=1, type=int)
     arg_parser.add_argument('--target', default=1, type=int)
-    arg_parser.add_argument('--finetune_dataset', default='data/chembl_active_compounds.smi', type=str)
+    # arg_parser.add_argument('--finetune_dataset', default='data/chembl_active_compounds.smi', type=str)
+    arg_parser.add_argument('--finetune_dataset', default='data/excape_active_compounds.smi', type=str)
 
     # List of targets for inference
     arg_parser.add_argument('--infer_targets', nargs='+', type=int)
@@ -312,7 +313,7 @@ if __name__ == '__main__':
             end_time = time.time()
             torch.cuda.empty_cache()
 
-            if (epoch+1)%10==0:
+            if (epoch+1)%25==0:
                 torch.save(transformer.state_dict(), args.path+'_'+str(epoch+1))
                 print('Model saved every 10 epoches.') 
             

@@ -46,16 +46,16 @@ for path in generated_mols_paths:
 
         predictions[f"{model}_Activity"] = np.array(preds).flatten()
 
-        # print(f"Running inference for {model} - pIC50")
-        # arguments = [
-        #     '--test_path', '/dev/null',
-        #     '--preds_path', '/dev/null',
-        #     '--checkpoint_dir', f'../models_chemprop/{model}-IC50-checkpoint'
-        # ]
-        # args = chemprop.args.PredictArgs().parse_args(arguments)
-        # preds = chemprop.train.make_predictions(args=args, smiles=smiles_input)
+        print(f"Running inference for {model} - pXC50")
+        arguments = [
+            '--test_path', '/dev/null',
+            '--preds_path', '/dev/null',
+            '--checkpoint_dir', f'../models_chemprop/{model}-pXC50-checkpoint'
+        ]
+        args = chemprop.args.PredictArgs().parse_args(arguments)
+        preds = chemprop.train.make_predictions(args=args, smiles=smiles_input)
 
-        # predictions[f"{model}_pIC50"] = np.array(preds).flatten()
+        predictions[f"{model}_pXC50"] = np.array(preds).flatten()
 
         print(f"Running inference for {model} - Inhibition")
         arguments = [

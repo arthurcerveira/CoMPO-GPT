@@ -10,11 +10,11 @@ targets = ["AChE", "D2R", "D3R", "_5HT2A", "MAOB"]
 
 # BD: brain disorders
 command_template = """
-    chemprop_train --data_path ./data/Assays-IC50/{target}.tsv \
+    chemprop_train --data_path ./data/Assays-pXC50/{target}.csv \
                    --dataset_type regression \
-                   --save_dir ./models_chemprop/{target}-IC50-checkpoint \
-                   --smiles_column smiles \
-                   --target_columns IC50
+                   --save_dir ./models_chemprop/{target}-pXC50-checkpoint \
+                   --smiles_column SMILES \
+                   --target_columns pXC50
 """
 
 for target in targets:
