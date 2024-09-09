@@ -315,7 +315,7 @@ if __name__ == '__main__':
 
             if (epoch+1)%25==0:
                 torch.save(transformer.state_dict(), args.path+'_'+str(epoch+1))
-                print('Model saved every 10 epoches.') 
+                print('Model saved every 25 epoches.') 
             
             if (epoch+1)%1==0:
                 val_loss = evaluate(transformer, valid_iter)
@@ -352,9 +352,9 @@ if __name__ == '__main__':
             end_time = time.time()
             torch.cuda.empty_cache()
 
-            if (epoch+1)%10==0:
+            if (epoch+1)%25==0:
                 torch.save(transformer.state_dict(), args.path_ft+'_'+str(epoch+1))
-                print('Fine-tunned model saved every 10 epoches.')
+                print('Fine-tunned model saved every 25 epoches.')
 
             if (epoch+1)%1==0:
                 val_loss = evaluate(transformer, val_iter)

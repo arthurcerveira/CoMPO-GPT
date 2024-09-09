@@ -5,7 +5,7 @@ cd "$(dirname "$0")"/..
 pwd
 
 # list of target names
-targets=("Unconditional" "AChE" "D2R" "D3R" "_5HT2A" "MAOB" "BBB")
+targets=("Unconditional" "AChE" "D2R" "D3R" "_5HT2A" "MAOB") # "BBB")
 
 # number of epochs comes from command line argument
 epochs=$1
