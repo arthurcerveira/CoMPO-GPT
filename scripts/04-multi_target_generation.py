@@ -35,8 +35,8 @@ target_combinations = (
     ("D2R", "D3R"),
 )
 
-# agg_functions = ("mean", "max") #, "sum")
-agg_functions = ("sum", "mean", "max")
+# agg_functions = ("sum", "mean", "max")
+agg_functions = ("sum",)  # "mean", "max")
 
 for combination, agg in itertools.product(target_combinations, agg_functions):
     t1 = targets_to_idx[combination[0]]
