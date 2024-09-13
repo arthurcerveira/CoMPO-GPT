@@ -3,6 +3,7 @@ import itertools
 # cd to the root of the project
 import os
 import sys
+from concurrent.futures import ProcessPoolExecutor
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(CURRENT_DIR + "/..")
@@ -35,18 +36,27 @@ target_combinations = (
     ("D2R", "D3R"),
 )
 
-# agg_functions = ("sum", "mean", "max")
 agg_functions = ("sum",)  # "mean", "max")
 
-for combination, agg in itertools.product(target_combinations, agg_functions):
+def run_command(combination, agg):
     t1 = targets_to_idx[combination[0]]
     t2 = targets_to_idx[combination[1]]
-
     command = command_template.format(
         t1=t1, t2=t2, agg=agg, combination="_".join(combination),
         agg_file=agg.upper(), model_path=model_path, epochs=EPOCH
     )
-    print(command)
+    print(f"Executing: {command}")
     subprocess.run(command, shell=True)
+
+# Use ProcessPoolExecutor with a limited number of workers
+with ProcessPoolExecutor(max_workers=36) as executor:
+    futures = [
+        executor.submit(run_command, combination, agg)
+        for combination, agg in itertools.product(target_combinations, agg_functions)
+    ]
+
+# Wait for all tasks to complete
+for future in futures:
+    future.result()
 
 print("Done")

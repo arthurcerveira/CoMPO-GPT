@@ -13,7 +13,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import sys
-from model_auto import Seq2SeqTransformer, PositionalEncoding, generate_square_subsequent_mask, create_mask
+from model_auto import ConditionalTransformer, PositionalEncoding, generate_square_subsequent_mask, create_mask
 from utils import top_k_top_p_filtering, open_file, read_csv_file, load_sets
 import vocabulary as mv
 import dataset as md
@@ -270,9 +270,9 @@ if __name__ == '__main__':
     DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     device = args.device
 
-    transformer = Seq2SeqTransformer(NUM_ENCODER_LAYERS, NUM_DECODER_LAYERS, 
-                                 EMB_SIZE, SRC_VOCAB_SIZE, TGT_VOCAB_SIZE,
-                                 FFN_HID_DIM, args=args)
+    transformer = ConditionalTransformer(
+        NUM_ENCODER_LAYERS, EMB_SIZE, SRC_VOCAB_SIZE, TGT_VOCAB_SIZE, FFN_HID_DIM, args=args
+    )
 
     for p in transformer.parameters():
         if p.dim() > 1:
@@ -290,8 +290,8 @@ if __name__ == '__main__':
     # If fine-tuning, set different optimizers for the embeddings and the rest of the model
     if args.mode == 'finetune':
         optimizer = torch.optim.Adam([
-            {'params': transformer.params["conditional"].parameters(), 'lr': 3e-4},
-            {'params': transformer.params["generation"].parameters(), 'lr': 1e-4}
+            {'params': transformer.params["conditional"].parameters(), 'lr': 1e-4},
+            # {'params': transformer.params["generation"].parameters(), 'lr': 1e-4}
         ], betas=(0.9, 0.98), eps=1e-9)
     else:
         optimizer = torch.optim.Adam(

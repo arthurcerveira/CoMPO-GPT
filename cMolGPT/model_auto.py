@@ -35,12 +35,12 @@ EOS_IDX = 2
 ########################
 # x1 -> y
 #######################
-class Seq2SeqTransformer(nn.Module):
-    def __init__(self, num_encoder_layers: int, num_decoder_layers: int,
+class ConditionalTransformer(nn.Module):
+    def __init__(self, num_decoder_layers: int,
                  emb_size: int, src_vocab_size: int, tgt_vocab_size: int,
                  dim_feedforward:int = 512, dropout:float = 0.1, args = None,
                  emb_input_size=7):
-        super(Seq2SeqTransformer, self).__init__()
+        super(ConditionalTransformer, self).__init__()
         decoder_layer = TransformerDecoderLayer(d_model=emb_size, nhead=args.nhead,
                                                 dim_feedforward=dim_feedforward)
         self.transformer_decoder = TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
@@ -51,50 +51,31 @@ class Seq2SeqTransformer(nn.Module):
         self.tgt_tok_emb = TokenEmbedding(tgt_vocab_size, emb_size)
 
         self.positional_encoding = PositionalEncoding(emb_size, dropout=dropout)
-        self.emb = nn.Embedding(emb_input_size, dim_feedforward, padding_idx=0) # number of targets + 1 (no target) = 7
+        self.emb = nn.Embedding(emb_input_size, dim_feedforward, padding_idx=0)
 
-        # Additional feedforward layer
-        # self.ffn = nn.Sequential(
-        #     nn.Linear(dim_feedforward, dim_feedforward),
-        #     nn.ReLU(),
-        #     nn.Dropout(dropout),
-        #     nn.Linear(dim_feedforward, emb_size)
-        # )
+        # Get first layer of the transformer
+        first_layer = self.transformer_decoder.layers[0]
 
         self.params = nn.ModuleDict({
-            # 'conditional': nn.ModuleList([self.emb, self.ffn]),
-            'conditional': nn.ModuleList([self.emb]),
+            # 'conditional': nn.ModuleList([self.emb]),
+            'conditional': nn.ModuleList([self.emb, first_layer]),
             'generation': nn.ModuleList([
                 self.transformer_decoder, self.positional_encoding, self.tgt_tok_emb, self.generator
             ])
         })
 
-    def forward(self, trg: Tensor, tgt_mask: Tensor, tgt_padding_mask: Tensor, target: Tensor):
-        #src_emb = self.positional_encoding(self.src_tok_emb(src))
+    def forward(self, trg: Tensor, tgt_mask: Tensor, tgt_padding_mask: Tensor, condition: Tensor):
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(trg))
-        #memory = self.transformer_encoder(src_emb, src_mask, src_padding_mask)
         s, b = trg.size()
-        #memory = torch.zeros(s, b, 512).to('cuda')
-        #print(target.size())
-        # memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
 
-        memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
-        # memory = self.ffn(memory)
-
-        #print(memory.size())
+        memory = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
         outs = self.transformer_decoder(tgt_emb, memory, tgt_mask, None,
                                         tgt_padding_mask)
         return self.generator(outs)
 
-    def encode(self, src: Tensor, src_mask: Tensor):
-        return self.transformer_encoder(self.positional_encoding(
-                            self.src_tok_emb(src)), src_mask)
-
-    def decode(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor):
+    def decode(self, tgt: Tensor, tgt_mask: Tensor, condition: Tensor):
         s, b = tgt.size()
-
-        memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
-        # memory = self.ffn(memory)  # Apply the additional feedforward layer
+        memory = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
 
         return self.transformer_decoder(self.positional_encoding(
                           self.tgt_tok_emb(tgt)), memory,
