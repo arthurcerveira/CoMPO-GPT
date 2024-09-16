@@ -54,11 +54,11 @@ class ConditionalTransformer(nn.Module):
         self.emb = nn.Embedding(emb_input_size, dim_feedforward, padding_idx=0)
 
         # Get first layer of the transformer
-        first_layer = self.transformer_decoder.layers[0]
+        # first_layer = self.transformer_decoder.layers[0]
 
         self.params = nn.ModuleDict({
-            # 'conditional': nn.ModuleList([self.emb]),
-            'conditional': nn.ModuleList([self.emb, first_layer]),
+            'conditional': nn.ModuleList([self.emb]),
+            # 'conditional': nn.ModuleList([self.emb, first_layer]),
             'generation': nn.ModuleList([
                 self.transformer_decoder, self.positional_encoding, self.tgt_tok_emb, self.generator
             ])
