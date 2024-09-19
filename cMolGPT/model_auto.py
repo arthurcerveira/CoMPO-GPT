@@ -52,13 +52,11 @@ class ConditionalTransformer(nn.Module):
 
         self.positional_encoding = PositionalEncoding(emb_size, dropout=dropout)
         self.emb = nn.Embedding(emb_input_size, dim_feedforward, padding_idx=0)
-
-        # Get first layer of the transformer
-        # first_layer = self.transformer_decoder.layers[0]
+        self.condition_proj = nn.Linear(dim_feedforward, emb_size)
 
         self.params = nn.ModuleDict({
-            'conditional': nn.ModuleList([self.emb]),
-            # 'conditional': nn.ModuleList([self.emb, first_layer]),
+            # 'conditional': nn.ModuleList([self.emb]),
+            'conditional': nn.ModuleList([self.emb, self.condition_proj]),
             'generation': nn.ModuleList([
                 self.transformer_decoder, self.positional_encoding, self.tgt_tok_emb, self.generator
             ])
@@ -68,18 +66,40 @@ class ConditionalTransformer(nn.Module):
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(trg))
         s, b = trg.size()
 
-        memory = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
-        outs = self.transformer_decoder(tgt_emb, memory, tgt_mask, None,
-                                        tgt_padding_mask)
+        # memory = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
+        # outs = self.transformer_decoder(tgt_emb, memory, tgt_mask, None,
+        #                                 tgt_padding_mask)
+        
+        # Generate and project condition embedding to match embedding size
+        condition_emb = self.condition_proj(self.emb(condition)).unsqueeze(0).repeat(s, 1, 1)
+
+        # Combine embeddings
+        combined_emb = tgt_emb + condition_emb  # Summing instead of concatenating as an alternative
+
+        outs = self.transformer_decoder(combined_emb, condition_emb, tgt_mask, None, tgt_padding_mask)
         return self.generator(outs)
 
     def decode(self, tgt: Tensor, tgt_mask: Tensor, condition: Tensor):
         s, b = tgt.size()
-        memory = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
+        # memory = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
 
-        return self.transformer_decoder(self.positional_encoding(
-                          self.tgt_tok_emb(tgt)), memory,
-                          tgt_mask)
+        # return self.transformer_decoder(self.positional_encoding(
+        #                   self.tgt_tok_emb(tgt)), memory,
+        #                   tgt_mask)
+            # Generate condition embedding
+        condition_emb = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
+        
+        # Project condition embedding if needed (only if used in forward method)
+        condition_emb = self.condition_proj(condition_emb)
+        
+        # Positional encoding of target tokens
+        tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
+        
+        # Combine condition embedding with target token embedding
+        combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
+        
+        # Decode with the modified embedding
+        return self.transformer_decoder(combined_emb, condition_emb, tgt_mask)
 
     def decode_exclude(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor, exclude_target: Tensor):
         s, b = tgt.size()
@@ -108,10 +128,21 @@ class ConditionalTransformer(nn.Module):
             raise ValueError(f"Invalid aggregate_fn: {aggregate_fn}")
 
         # pooled_memory = self.ffn(pooled_memory)
+        # Project condition embedding if needed (only if used in forward method)
+        condition_emb = self.condition_proj(pooled_memory)
+        
+        # Positional encoding of target tokens
+        tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
+        
+        # Combine condition embedding with target token embedding
+        combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
+        
+        # Decode with the modified embedding
+        return self.transformer_decoder(combined_emb, condition_emb, tgt_mask)
 
-        return self.transformer_decoder(self.positional_encoding(
-                          self.tgt_tok_emb(tgt)), pooled_memory,
-                          tgt_mask)
+        # return self.transformer_decoder(self.positional_encoding(
+        #                   self.tgt_tok_emb(tgt)), pooled_memory,
+        #                   tgt_mask)
 
 
 ######################################################################
