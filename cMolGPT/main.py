@@ -212,8 +212,9 @@ if __name__ == '__main__':
     arg_parser.add_argument('--path_ft', default='model_chem_finetune.h5', type=str)
     arg_parser.add_argument('--datamode', default=1, type=int)
     arg_parser.add_argument('--target', default=1, type=int)
-    arg_parser.add_argument('--finetune_dataset', default='data/chembl_active_compounds.smi', type=str)
+    # arg_parser.add_argument('--finetune_dataset', default='data/chembl_active_compounds.smi', type=str)
     # arg_parser.add_argument('--finetune_dataset', default='data/excape_active_compounds.smi', type=str)
+    arg_parser.add_argument('--finetune_dataset', default='data/excape_all_active_compounds.smi', type=str)
 
     # List of targets for inference
     arg_parser.add_argument('--infer_targets', nargs='+', type=int)
@@ -270,8 +271,10 @@ if __name__ == '__main__':
     DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     device = args.device
 
+    emb_len = max([int(t) for t in target_list]) + 1
+    print(f'# of targets: {emb_len}')
     transformer = ConditionalTransformer(
-        NUM_ENCODER_LAYERS, EMB_SIZE, SRC_VOCAB_SIZE, TGT_VOCAB_SIZE, FFN_HID_DIM, args=args
+        NUM_ENCODER_LAYERS, EMB_SIZE, SRC_VOCAB_SIZE, TGT_VOCAB_SIZE, FFN_HID_DIM, args=args, emb_input_size=emb_len
     )
 
     for p in transformer.parameters():
