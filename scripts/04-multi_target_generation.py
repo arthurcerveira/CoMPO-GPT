@@ -23,7 +23,7 @@ command_template = """
     python3 cMolGPT/main.py \
       --mode infer --infer_target {t1} {t2} \
       --multivariate {agg} --path {model_path} \
-      --num_molecules 30000 \
+      --num_molecules 10000 \
       --output_path generated_molecules/{epochs}-epoch/{combination}_{agg_file}.csv
 """
 

@@ -227,7 +227,7 @@ if __name__ == '__main__':
     # Exclude target from decoder input
     arg_parser.add_argument('--exclude_target', type=int)
 
-    arg_parser.add_argument('--d_model', default=512, type=int)
+    arg_parser.add_argument('--d_model', default=1024, type=int)
     arg_parser.add_argument('--nhead', default=8, type=int)
     arg_parser.add_argument('--embedding_size', default=200, type=int)
     arg_parser.add_argument('--loadmodel', default=False, action="store_true")
