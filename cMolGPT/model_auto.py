@@ -26,8 +26,7 @@ from collections import Counter
 from torch import Tensor
 import io
 import time
-from torch.nn import (TransformerEncoder, TransformerDecoder,
-                      TransformerEncoderLayer, TransformerDecoderLayer)
+from torch.nn import (TransformerDecoder, TransformerDecoderLayer)
 
 PAD_IDX = 0
 BOS_IDX = 1
@@ -52,11 +51,14 @@ class ConditionalTransformer(nn.Module):
 
         self.positional_encoding = PositionalEncoding(emb_size, dropout=dropout)
         self.emb = nn.Embedding(emb_input_size, dim_feedforward, padding_idx=0)
-        self.condition_proj = nn.Linear(dim_feedforward, emb_size)
+        self.condition_proj = nn.Linear(dim_feedforward, emb_size)     
+
+        # Linear layer to preject combined embeddings to the transformer input size
+        self.input_proj = nn.Linear(emb_size * 2, emb_size)
 
         self.params = nn.ModuleDict({
             # 'conditional': nn.ModuleList([self.emb]),
-            'conditional': nn.ModuleList([self.emb, self.condition_proj]),
+            'conditional': nn.ModuleList([self.emb, self.condition_proj, self.input_proj]),
             'generation': nn.ModuleList([
                 self.transformer_decoder, self.positional_encoding, self.tgt_tok_emb, self.generator
             ])
@@ -74,7 +76,10 @@ class ConditionalTransformer(nn.Module):
         condition_emb = self.condition_proj(self.emb(condition)).unsqueeze(0).repeat(s, 1, 1)
 
         # Combine embeddings
-        combined_emb = tgt_emb + condition_emb  # Summing instead of concatenating as an alternative
+        # combined_emb = tgt_emb + condition_emb  # Summing instead of concatenating as an alternative
+        # Concatenate embeddings
+        combined_emb_cat = torch.cat((tgt_emb, condition_emb), dim=-1)
+        combined_emb = self.input_proj(combined_emb_cat)
 
         outs = self.transformer_decoder(combined_emb, condition_emb, tgt_mask, None, tgt_padding_mask)
         return self.generator(outs)
@@ -96,8 +101,10 @@ class ConditionalTransformer(nn.Module):
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
         
         # Combine condition embedding with target token embedding
-        combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
-        
+        # combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
+        combined_emb_cat = torch.cat((tgt_emb, condition_emb), dim=-1)
+        combined_emb = self.input_proj(combined_emb_cat)
+
         # Decode with the modified embedding
         return self.transformer_decoder(combined_emb, condition_emb, tgt_mask)
 
@@ -135,15 +142,12 @@ class ConditionalTransformer(nn.Module):
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
         
         # Combine condition embedding with target token embedding
-        combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
-        
+        # combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
+        combined_emb_cat = torch.cat((tgt_emb, condition_emb), dim=-1)
+        combined_emb = self.input_proj(combined_emb_cat)
+
         # Decode with the modified embedding
         return self.transformer_decoder(combined_emb, condition_emb, tgt_mask)
-
-        # return self.transformer_decoder(self.positional_encoding(
-        #                   self.tgt_tok_emb(tgt)), pooled_memory,
-        #                   tgt_mask)
-
 
 ######################################################################
 # Text tokens are represented by using token embeddings. Positional
