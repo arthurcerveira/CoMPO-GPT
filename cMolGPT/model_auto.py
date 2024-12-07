@@ -41,7 +41,9 @@ class ConditionalTransformer(nn.Module):
                  emb_input_size=7):
         super(ConditionalTransformer, self).__init__()
         decoder_layer = TransformerDecoderLayer(d_model=emb_size, nhead=args.nhead,
-                                                dim_feedforward=dim_feedforward)
+                                                dim_feedforward=dim_feedforward, 
+                                                # Experimental: GELU activation and LayerNorm before feedforward
+                                                activation="gelu", norm_first=False)
         self.transformer_decoder = TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
 
         tgt_vocab_size = src_vocab_size        
@@ -76,12 +78,12 @@ class ConditionalTransformer(nn.Module):
         condition_emb = self.condition_proj(self.emb(condition)).unsqueeze(0).repeat(s, 1, 1)
 
         # Combine embeddings
-        # combined_emb = tgt_emb + condition_emb  # Summing instead of concatenating as an alternative
+        combined_emb = tgt_emb + condition_emb  # Summing instead of concatenating as an alternative
         # Concatenate embeddings
         # combined_emb_cat = torch.cat((tgt_emb, condition_emb), dim=-1)
         # combined_emb = self.input_proj(combined_emb_cat)
 
-        outs = self.transformer_decoder(tgt_emb, condition_emb, tgt_mask, None, tgt_padding_mask)
+        outs = self.transformer_decoder(combined_emb, condition_emb, tgt_mask, None, tgt_padding_mask)
         return self.generator(outs)
 
     def decode(self, tgt: Tensor, tgt_mask: Tensor, condition: Tensor):
@@ -101,12 +103,12 @@ class ConditionalTransformer(nn.Module):
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
         
         # Combine condition embedding with target token embedding
-        # combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
+        combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
         # combined_emb_cat = torch.cat((tgt_emb, condition_emb), dim=-1)
         # combined_emb = self.input_proj(combined_emb_cat)
 
         # Decode with the modified embedding
-        return self.transformer_decoder(tgt_emb, condition_emb, tgt_mask)
+        return self.transformer_decoder(combined_emb, condition_emb, tgt_mask)
 
     # def decode_exclude(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor, exclude_target: Tensor):
     #     s, b = tgt.size()

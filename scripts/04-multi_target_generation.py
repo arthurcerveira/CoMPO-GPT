@@ -37,6 +37,7 @@ target_combinations = (
 )
 
 agg_functions = ("sum", "mean", "max")
+agg_functions = ("sum",) # "mean", "max")
 
 def run_command(combination, agg):
     t1 = targets_to_idx[combination[0]]
