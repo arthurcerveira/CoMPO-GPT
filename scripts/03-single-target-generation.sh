@@ -37,7 +37,7 @@ do
     echo "Generating molecules for target: ${targets[i]}"
     #print command
     echo "python3 cMolGPT/main.py --mode infer --target ${i} --path ${model_path} \
-                          --num_molecules 30000 --output_path generated_molecules/${epochs}-epoch/${targets[i]}.csv"
+                          --num_molecules 10000 --output_path generated_molecules/${epochs}-epoch/${targets[i]}.csv"
 
     python3 cMolGPT/main.py --mode infer --target ${i} --path ${model_path} \
                     --num_molecules 10000 --output_path generated_molecules/${epochs}-epoch/${targets[i]}.csv  &
