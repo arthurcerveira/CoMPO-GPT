@@ -1,6 +1,5 @@
 #!/bin/sh
 
-# for epochs in 25 50 75 100;
 for epochs in 25 50 100;
 do
     echo "Running pipeline for $epochs epochs"

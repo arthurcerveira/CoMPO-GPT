@@ -21,17 +21,14 @@ PREDICTED_ACTIVITY_PATH = CURRENT_DIR / ".." / "generated_molecules" / f"{EPOCH}
 # Multi-target prediction
 multitarget_combination = {
     "AChE_MAOB": {
-        # "generated_molecules": ["AChE", "MAOB", "AChE_MAOB_SUM"],
         "generated_molecules": ["AChE", "MAOB", "AChE_MAOB_SUM", "AChE_MAOB_MEAN", "AChE_MAOB_MAX"],
         "models": ["AChE", "MAOB"]
     },
     "D2R_D3R": {
-        # "generated_molecules": ["D2R", "D3R", "D2R_D3R_SUM"],
         "generated_molecules": ["D2R", "D3R", "D2R_D3R_SUM", "D2R_D3R_MEAN", "D2R_D3R_MAX"],
         "models": ["D2R", "D3R"]
     },
     "D2R__5HT2A": {
-        "generated_molecules": ["D2R", "_5HT2A", "D2R__5HT2A_SUM"],
         "generated_molecules": ["D2R", "_5HT2A", "D2R__5HT2A_SUM", "D2R__5HT2A_MEAN", "D2R__5HT2A_MAX"],
         "models": ["D2R", "_5HT2A"]
     },
