@@ -1,6 +1,6 @@
 # Conditional Multi-Property Optimization for Generative Pre-trained Transformer
 
-This repository contains the code for the paper "CoMPO-GPT: Cross-Attention Conditioning for Multi-target Molecular Design in Generative Models".
+This repository contains the code and data for the paper "CoMPO-GPT: Cross-Attention Conditioning for Multi-target Molecular Design in Generative Models".
 
 <figure>
     <img src="figures/Architecture.png" width="900">
@@ -8,9 +8,9 @@ This repository contains the code for the paper "CoMPO-GPT: Cross-Attention Cond
 
 ## Setup
 
-This code was written and tested on a NVIDIA GeForce RTX 4090 GPU. You must have `conda` installed to follow the instructions below.
+This code was tested using a NVIDIA GeForce RTX 4090 GPU. You must have `conda` and `git` installed to follow the instructions below.
 
-First, use git to clone the repository. Our setup comprises of two environments for (1) running the generative model and (2) running the molecular activity prediction models.
+First, use git to clone the repository. Our setup comprises two environments for (1) running the generative model (`aidd`) and (2) running the molecular activity prediction models (`chemprop`).
 
 **1. Create `aidd` conda environment**
 
@@ -33,14 +33,14 @@ $ pip install -e .
 
 #### With `conda activate aidd`
 
-1. Generate datasets by running `scripts/01-ExCAPE-EDA.ipynb` (optional, as the data is already provided in the `data` folder). Running this notebook requires the full ExCAPE dataset available [here](https://solr.ideaconsult.net/search/excape/).
-2. Pre-train and fine-tune the model: 
+1. Generate datasets by running `scripts/01-ExCAPE-EDA.ipynb` (optional, as the data is already provided in the `data` folder). Running this notebook requires the full ExCAPE dataset available [here](https://github.com/arthurcerveira/CoMPO-GPT/releases/tag/v1.0.0).
+2. Pre-train and fine-tune the model (pre-trained and fine-tuned model weights are also available [here](https://github.com/arthurcerveira/CoMPO-GPT/releases/tag/v1.0.0)).
 
 ```bash
 $ bash scripts/02-fine-tuning.sh
 ```
 
-3. Generate molecules (with model trained for 25 epochs): 
+3. Generate molecules (with the model trained for 25 epochs): 
 
 ```bash
 $ bash scripts/03-single-target-generation.sh 25
