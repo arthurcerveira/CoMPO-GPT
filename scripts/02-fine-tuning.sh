@@ -5,27 +5,27 @@ cd "$(dirname "$0")"/..
 pwd
 
 # We must pre-train first if there are architectural modifications
-echo "python cMolGPT/main.py --mode train --batch_size 256 --epoch 100 \
-                       --path models_cMolGPT/base.h5 \
-                       --d_model 1024 \
-                       --finetune_dataset data/excape_all_active_compounds.smi"
+# echo "python CoMPO-GPT/main.py --mode train --batch_size 256 --epoch 100 \
+#                        --path weights/base.h5 \
+#                        --d_model 1024 \
+#                        --finetune_dataset data/excape_all_active_compounds.smi"
 
-python cMolGPT/main.py --mode train --batch_size 256 --epoch 100 \
-                       --path models_cMolGPT/base.h5 \
-                       --d_model 1024 \
-                       --finetune_dataset data/excape_all_active_compounds.smi
+# python CoMPO-GPT/main.py --mode train --batch_size 256 --epoch 100 \
+#                        --path weights/base.h5 \
+#                        --d_model 1024 \
+#                        --finetune_dataset data/excape_all_active_compounds.smi
 
 # For fine-tuning
-echo "python3 cMolGPT/main.py --batch_size 256 --mode finetune \
-                --path models_cMolGPT/base.h5 --loadmodel \
-                --path_ft models_cMolGPT/finetune.h5 \
+echo "python3 CoMPO-GPT/main.py --batch_size 256 --mode finetune \
+                --path weights/base.h5 --loadmodel \
+                --path_ft weights/finetune.h5 \
                 --d_model 1024 \
                 --finetune_dataset data/excape_all_active_compounds.smi \
                 --epoch 100"
 
-python3 cMolGPT/main.py --batch_size 256 --mode finetune \
-                --path models_cMolGPT/base.h5 --loadmodel \
-                --path_ft models_cMolGPT/finetune.h5 \
+python3 CoMPO-GPT/main.py --batch_size 256 --mode finetune \
+                --path weights/base.h5 --loadmodel \
+                --path_ft weights/finetune.h5 \
                 --d_model 1024 \
                 --finetune_dataset data/excape_all_active_compounds.smi \
                 --epoch 100

@@ -17,10 +17,9 @@ targets_to_idx = {
 }
 
 EPOCH = 100 if len(sys.argv) < 2 else sys.argv[1]
-model_path = f"models_cMolGPT/finetune.h5_{EPOCH}"
-
+model_path = f"weights/finetune.h5_{EPOCH}"
 command_template = """
-    python3 cMolGPT/main.py \
+    python3 CoMPO-GPT/main.py \
       --mode infer --infer_target {t1} {t2} \
       --multivariate {agg} --path {model_path} \
       --num_molecules 10000 \

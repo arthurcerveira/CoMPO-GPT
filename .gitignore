@@ -13,3 +13,5 @@ generated_molecules/*/*_MEAN.csv
 
 models_cMolGPT/*.h5_*
 *.png
+
+!figures/Architecture.png
