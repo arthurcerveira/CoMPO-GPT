@@ -55,12 +55,8 @@ class ConditionalTransformer(nn.Module):
         self.emb = nn.Embedding(emb_input_size, dim_feedforward, padding_idx=0)
         self.condition_proj = nn.Linear(dim_feedforward, emb_size)     
 
-        # Linear layer to preject combined embeddings to the transformer input size
-        # self.input_proj = nn.Linear(emb_size * 2, emb_size)
-
         self.params = nn.ModuleDict({
-            # 'conditional': nn.ModuleList([self.emb]),
-            'conditional': nn.ModuleList([self.emb, self.condition_proj]), #, self.input_proj]),
+            'conditional': nn.ModuleList([self.emb, self.condition_proj]),
             'generation': nn.ModuleList([
                 self.transformer_decoder, self.positional_encoding, self.tgt_tok_emb, self.generator
             ])
@@ -69,59 +65,29 @@ class ConditionalTransformer(nn.Module):
     def forward(self, trg: Tensor, tgt_mask: Tensor, tgt_padding_mask: Tensor, condition: Tensor):
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(trg))
         s, b = trg.size()
-
-        # memory = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
-        # outs = self.transformer_decoder(tgt_emb, memory, tgt_mask, None,
-        #                                 tgt_padding_mask)
         
         # Generate and project condition embedding to match embedding size
         condition_emb = self.condition_proj(self.emb(condition)).unsqueeze(0).repeat(s, 1, 1)
 
         # Combine embeddings
-        combined_emb = tgt_emb + condition_emb  # Summing instead of concatenating as an alternative
-        # Concatenate embeddings
-        # combined_emb_cat = torch.cat((tgt_emb, condition_emb), dim=-1)
-        # combined_emb = self.input_proj(combined_emb_cat)
+        combined_emb = tgt_emb + condition_emb
 
         outs = self.transformer_decoder(combined_emb, condition_emb, tgt_mask, None, tgt_padding_mask)
         return self.generator(outs)
 
     def decode(self, tgt: Tensor, tgt_mask: Tensor, condition: Tensor):
         s, b = tgt.size()
-        # memory = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
-
-        # return self.transformer_decoder(self.positional_encoding(
-        #                   self.tgt_tok_emb(tgt)), memory,
-        #                   tgt_mask)
-            # Generate condition embedding
         condition_emb = self.emb(condition).unsqueeze(0).repeat(s, 1, 1)
-        
-        # Project condition embedding if needed (only if used in forward method)
         condition_emb = self.condition_proj(condition_emb)
         
         # Positional encoding of target tokens
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
         
         # Combine condition embedding with target token embedding
-        combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
-        # combined_emb_cat = torch.cat((tgt_emb, condition_emb), dim=-1)
-        # combined_emb = self.input_proj(combined_emb_cat)
+        combined_emb = tgt_emb + condition_emb
 
         # Decode with the modified embedding
         return self.transformer_decoder(combined_emb, condition_emb, tgt_mask)
-
-    # def decode_exclude(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor, exclude_target: Tensor):
-    #     s, b = tgt.size()
-
-    #     memory = self.emb(target).unsqueeze(0).repeat(s, 1, 1)
-    #     exclude_memory = self.emb(exclude_target).unsqueeze(0).repeat(s, 1, 1)
-
-    #     memory_diff = memory - exclude_memory
-    #     # memory_diff = self.ffn(memory_diff)
-
-    #     return self.transformer_decoder(self.positional_encoding(
-    #                       self.tgt_tok_emb(tgt)), memory_diff,
-    #                       tgt_mask)
 
     def decode_multitarget(self, tgt: Tensor, tgt_mask: Tensor, target: Tensor, aggregate_fn='mean'):
         s, b = tgt.size()
@@ -136,20 +102,17 @@ class ConditionalTransformer(nn.Module):
         else:
             raise ValueError(f"Invalid aggregate_fn: {aggregate_fn}")
 
-        # pooled_memory = self.ffn(pooled_memory)
-        # Project condition embedding if needed (only if used in forward method)
+        # Project condition embedding
         condition_emb = self.condition_proj(pooled_memory)
-        
+
         # Positional encoding of target tokens
         tgt_emb = self.positional_encoding(self.tgt_tok_emb(tgt))
         
         # Combine condition embedding with target token embedding
-        # combined_emb = tgt_emb + condition_emb  # Can use concatenation if desired
-        # combined_emb_cat = torch.cat((tgt_emb, condition_emb), dim=-1)
-        # combined_emb = self.input_proj(combined_emb_cat)
+        combined_emb = tgt_emb + condition_emb
 
         # Decode with the modified embedding
-        return self.transformer_decoder(tgt_emb, condition_emb, tgt_mask)
+        return self.transformer_decoder(combined_emb, condition_emb, tgt_mask)
 
 ######################################################################
 # Text tokens are represented by using token embeddings. Positional

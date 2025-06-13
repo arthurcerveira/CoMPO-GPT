@@ -212,8 +212,6 @@ if __name__ == '__main__':
     arg_parser.add_argument('--path_ft', default='model_chem_finetune.h5', type=str)
     arg_parser.add_argument('--datamode', default=1, type=int)
     arg_parser.add_argument('--target', default=1, type=int)
-    # arg_parser.add_argument('--finetune_dataset', default='data/chembl_active_compounds.smi', type=str)
-    # arg_parser.add_argument('--finetune_dataset', default='data/excape_active_compounds.smi', type=str)
     arg_parser.add_argument('--finetune_dataset', default='data/excape_all_active_compounds.smi', type=str)
 
     # List of targets for inference
