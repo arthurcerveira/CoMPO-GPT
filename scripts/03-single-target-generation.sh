@@ -21,18 +21,18 @@ fi
 mkdir -p generated_molecules/${epochs}-epoch
 
 # for each target, generate molecules based on index
-for i in {0..5}
+for target in "${targets[@]}"
 do
-    model_path="weights/finetune.h5_${epochs}"
+    model_path="weights/finetune_mpo.h5_${epochs}"
 
     # print target name
-    echo "Generating molecules for target: ${targets[i]}"
+    echo "Generating molecules for target: ${target}"
     #print command
-    echo "python3 CoMPO-GPT/main.py --mode infer --target ${i} --path ${model_path} \
-                          --num_molecules 10000 --output_path generated_molecules/${epochs}-epoch/${targets[i]}.csv"
+    echo "python3 CoMPO-GPT/main.py --mode infer --target ${target} --path ${model_path} \
+                          --num_molecules 10000 --output_path generated_molecules/${epochs}-epoch/${target}.csv"
 
-    python3 CoMPO-GPT/main.py --mode infer --target ${i} --path ${model_path} \
-                    --num_molecules 10000 --output_path generated_molecules/${epochs}-epoch/${targets[i]}.csv  &
+    python3 CoMPO-GPT/main.py --mode infer --target ${target} --path ${model_path} \
+                    --num_molecules 10000 --output_path generated_molecules/${epochs}-epoch/${target}.csv  &
 done
 
 # wait for all background processes to finish
