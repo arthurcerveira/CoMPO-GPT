@@ -7,9 +7,13 @@ from rdkit import RDLogger
 import sys
 
 CURRENT_DIR = Path(__file__).resolve().parent
-os.chdir(CURRENT_DIR / "../chemprop")
+sys.path.append(str(CURRENT_DIR / ".." / "qsar"))
 
-import chemprop
+from assessment.chemprop_callback import (
+    predict_activity_chemprop, 
+    predict_bbb_chemprop, 
+    MaskedMSE
+)
 
 # Suppress warnings
 lg = RDLogger.logger()
@@ -48,7 +52,6 @@ for combination in multitarget_combination:
         activity_df = pd.read_csv(path)
 
         smiles = activity_df['SMILES'].tolist()
-        smiles_input = [[s] for s in smiles]
 
         for model in models:
             if f"{model}_pXC50" in activity_df.columns:
@@ -56,16 +59,8 @@ for combination in multitarget_combination:
                 continue
 
             print(f"Running inference for {model} - pXC50")
-            arguments = [
-                '--test_path', '/dev/null',
-                '--preds_path', '/dev/null',
-                '--checkpoint_dir', f'../models_chemprop/{model}-pXC50-checkpoint'
-            ]
-
-            args = chemprop.args.PredictArgs().parse_args(arguments)
-            preds = chemprop.train.make_predictions(args=args, smiles=smiles_input)
-
-            activity_df[f"{model}_pXC50"] = np.array(preds).flatten()
+            preds = predict_activity_chemprop(smiles, model)
+            activity_df[f"{model}_pXC50"] = np.array(preds)
 
         # Replace 'Invalid SMILES' with NaN for Activity and Inhibition
         activity_df = activity_df.replace('Invalid SMILES', np.nan)
@@ -74,12 +69,7 @@ for combination in multitarget_combination:
             {col: 'float' for col in activity_df.columns if col != 'SMILES'}
         )
 
-        # activity_df[f"{combination}_Activity"] = activity_df[
-        #     [f"{model}_Activity" for model in models]
-        # ].mean(axis=1, skipna=True)
-        # activity_df[f"{combination}_inhibition"] = activity_df[
-        #     [f"{model}_inhibition" for model in models]
-        # ].mean(axis=1, skipna=True)
+
         activity_df[f"{combination}_pXC50"] = activity_df[
             [f"{model}_pXC50" for model in models]
         ].mean(axis=1, skipna=True)
@@ -96,7 +86,6 @@ unconditional_df = pd.read_csv(mols_activity_paths)
 
 for combination in multitarget_combination:
     print(f"Processing {combination} combination")
-
     models = multitarget_combination[combination]["models"]
 
     # Replace 'Invalid SMILES' with NaN for Activity and Inhibition
@@ -106,12 +95,6 @@ for combination in multitarget_combination:
         {col: 'float' for col in unconditional_df.columns if col != 'SMILES'}
     )
 
-    # unconditional_df[f"{combination}_Activity"] = unconditional_df[
-    #     [f"{model}_Activity" for model in models]
-    # ].mean(axis=1, skipna=True)
-    # unconditional_df[f"{combination}_inhibition"] = unconditional_df[
-    #     [f"{model}_inhibition" for model in models]
-    # ].mean(axis=1, skipna=True)
     unconditional_df[f"{combination}_pXC50"] = unconditional_df[
         [f"{model}_pXC50" for model in models]
     ].mean(axis=1, skipna=True)

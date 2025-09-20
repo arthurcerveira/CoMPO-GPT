@@ -30,6 +30,7 @@ import io
 import time
 from tqdm import tqdm
 import pandas as pd
+import json
 
 torch.manual_seed(0)
 
@@ -211,11 +212,11 @@ if __name__ == '__main__':
     arg_parser.add_argument('--path', default='model_chem.h5', type=str)
     arg_parser.add_argument('--path_ft', default='model_chem_finetune.h5', type=str)
     arg_parser.add_argument('--datamode', default=1, type=int)
-    arg_parser.add_argument('--target', default=1, type=int)
-    arg_parser.add_argument('--finetune_dataset', default='data/excape_all_active_compounds.smi', type=str)
+    arg_parser.add_argument('--target', type=str)
+    arg_parser.add_argument('--finetune_dataset', default='data/active_compounds_mpo.smi', type=str)
 
     # List of targets for inference
-    arg_parser.add_argument('--infer_targets', nargs='+', type=int)
+    arg_parser.add_argument('--infer_targets', nargs='+', type=str)
     # Multivariative function to aggregate target embeddings
     arg_parser.add_argument('--multivariate', default='mean', type=str)
     # Number of molecules to generate for inference
@@ -223,7 +224,7 @@ if __name__ == '__main__':
     # Path to save generated molecules
     arg_parser.add_argument('--output_path', default='generated_molecules.csv', type=str)
     # Exclude target from decoder input
-    arg_parser.add_argument('--exclude_target', type=int)
+    arg_parser.add_argument('--exclude_target', type=str)
 
     arg_parser.add_argument('--d_model', default=1024, type=int)
     arg_parser.add_argument('--nhead', default=8, type=int)
@@ -239,6 +240,21 @@ if __name__ == '__main__':
     #training_sets = load_sets('zinc/zinc.smi')
     #dataset = md.DecoratorDataset(training_sets, vocabulary=vocabulary)
 
+    # Convert targets to integers
+    with open("data/target_conditions_to_index_mpo.json", "r") as f:
+        target_to_idx = json.load(f)["gene_to_index"]
+
+    if args.target is not None:
+        print(f"Property: {args.target} -> {target_to_idx[args.target]}")
+        args.target = target_to_idx[args.target]
+    if args.infer_targets is not None:
+        original_targets = args.infer_targets
+        args.infer_targets = [target_to_idx[target] for target in args.infer_targets]
+        print(f"Original properties: {original_targets} -> {args.infer_targets}")
+    if args.exclude_target is not None:
+        args.exclude_target = target_to_idx[args.exclude_target]
+
+    # Load data
     mol_list0_train = list(read_delimited_file('data/train.smi'))
     mol_list0_test = list(read_delimited_file('data/test.smi'))
     
@@ -270,7 +286,7 @@ if __name__ == '__main__':
     device = args.device
 
     emb_len = max([int(t) for t in target_list]) + 1
-    print(f'# of targets: {emb_len}')
+    print(f'# of properties: {emb_len}')
     transformer = ConditionalTransformer(
         NUM_ENCODER_LAYERS, EMB_SIZE, SRC_VOCAB_SIZE, TGT_VOCAB_SIZE, FFN_HID_DIM, args=args, emb_input_size=emb_len
     )

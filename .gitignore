@@ -16,3 +16,6 @@ models_cMolGPT/*.h5_*
 
 !figures/Architecture.png
 *.h5
+*.h5_*
+
+ignore/

@@ -7,9 +7,13 @@ from rdkit import RDLogger
 import sys
 
 CURRENT_DIR = Path(__file__).resolve().parent
-os.chdir(CURRENT_DIR / "../chemprop")
+sys.path.append(str(CURRENT_DIR / ".." / "qsar"))
 
-import chemprop
+from assessment.chemprop_callback import (
+    predict_activity_chemprop, 
+    predict_bbb_chemprop, 
+    MaskedMSE
+)
 
 # Suppress warnings
 lg = RDLogger.logger()
@@ -27,25 +31,14 @@ for path in generated_mols_paths:
     print(f"Processing {path.resolve()}")
 
     smiles = pd.read_csv(path)['SMILES'].tolist()
-    smiles_input = [[s] for s in smiles]
-    predictions = pd.DataFrame()
-    predictions['SMILES'] = smiles
+    predictions = pd.DataFrame(data=smiles, columns=['SMILES'])
 
     for model in models:
         if model not in path.stem and path.stem != "Unconditional":
             continue
 
-        print(f"Running inference for {model} - pXC50")
-        arguments = [
-            '--test_path', '/dev/null',
-            '--preds_path', '/dev/null',
-            '--checkpoint_dir', f'../models_chemprop/{model}-pXC50-checkpoint'
-        ]
-        args = chemprop.args.PredictArgs().parse_args(arguments)
-        preds = chemprop.train.make_predictions(args=args, smiles=smiles_input)
-
-        predictions[f"{model}_pXC50"] = np.array(preds).flatten()
-
+        preds = predict_activity_chemprop(smiles, model)
+        predictions[f"{model}_pXC50"] = np.array(preds)  # .flatten()
 
     predictions.to_csv(
         GENERATED_MOLS_PATH / "predicted_activity" / f"{path.stem}.csv", index=False
