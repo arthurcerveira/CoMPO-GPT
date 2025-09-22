@@ -17,7 +17,7 @@ torch.set_float32_matmul_precision("high")
 from pytorch_lightning.utilities import rank_zero
 rank_zero.rank_zero_info = lambda *a, **k: None
 import logging
-logging.getLogger("pytorch_lightning").setLevel(logging.CRITICAL)
+logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -198,6 +198,39 @@ with open(data_dir / f"target_clusters_correlation_TVT.json", "r") as f:
     target_clusters_tvt = json.load(f)
 
 
+def add_masked_mse_to_modules():
+    """
+    Avoids the error: 
+        AttributeError: Can't get attribute 'MaskedMSE' on <module 
+        '__main__' (<class '_frozen_importlib.BuiltinImporter'>)>
+    when importing the module in other scripts.
+    """
+    import sys
+    # Add the MaskedMSE class to the __main__ module so PyTorch can find it
+    if '__main__' not in sys.modules:
+        import types
+        sys.modules['__main__'] = types.ModuleType('__main__')
+    
+    # Add the MaskedMSE class to __main__ module
+    sys.modules['__main__'].MaskedMSE = MaskedMSE
+
+
+def load_model_from_target(target):
+    add_masked_mse_to_modules()
+
+    if target == "BBB":
+        return models.MPNN.load_from_checkpoint(
+            checkpoints_dir / "target-specific" / "TVT" / "BBB" / "last.ckpt",
+            map_location="cuda",
+        ).eval()
+
+    cluster = target_clusters_tvt["targets_to_cluster"][target]
+    return models.MPNN.load_from_checkpoint(
+        checkpoints_dir / "clustered-multi-target" / "TVT-KD" / f"cluster-{cluster}" / "last.ckpt",
+        map_location="cuda",
+    ).eval()
+
+
 def predict_activity_chemprop(smiles, target, model=None):
     """
     Predict activity for a target using a Chemprop model.
@@ -206,14 +239,13 @@ def predict_activity_chemprop(smiles, target, model=None):
     Then, predict the SMILES activity for the target.
     If the model is not provided, it will be loaded from the checkpoint.
     """
+    add_masked_mse_to_modules()
+
     cluster = target_clusters_tvt["targets_to_cluster"][target]
     target_idx_in_cluster = target_clusters_tvt["cluster_to_targets"][str(cluster)].index(target)
 
     if model is None:
-        model = models.MPNN.load_from_checkpoint(
-            checkpoints_dir / "clustered-multi-target" / "TVT-KD" / f"cluster-{cluster}" / "last.ckpt",
-        )
-        model.to("cuda").eval()
+        model = load_model_from_target(target)
 
     predictions = run_mpnn_on_smiles(smiles, model)
     # If there is only one target in the cluster, we must reshape it to (1, # molecules)
@@ -229,11 +261,10 @@ def predict_bbb_chemprop(smiles, model=None):
     Checkpoint: checkpoints_dir / "target-specific" / "TVT" / "BBB" / "last.ckpt"
     If the model is not provided, it will be loaded from the checkpoint.
     """
+    add_masked_mse_to_modules()
+
     if model is None:
-        model = models.MPNN.load_from_checkpoint(
-            checkpoints_dir / "target-specific" / "TVT" / "BBB" / "last.ckpt"
-        )
-        model.to("cuda").eval()
+        model = load_model_from_target("BBB")
 
     predictions = run_mpnn_on_smiles(smiles, model)
     return predictions  # Predictions will have shape (# of molecules,)
