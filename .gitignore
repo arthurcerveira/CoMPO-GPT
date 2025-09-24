@@ -19,3 +19,4 @@ models_cMolGPT/*.h5_*
 *.h5_*
 
 ignore/
+data/training_files/

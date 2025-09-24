@@ -1,4 +1,5 @@
 import datetime
+import random
 import json
 import logging
 from collections import OrderedDict
@@ -12,6 +13,18 @@ from guacamol.utils.data import get_time_string
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+
+class _SmilesListGenerator(DistributionMatchingGenerator):
+    """
+    Simple generator that samples SMILES strings from a provided list.
+    """
+
+    def __init__(self, smiles: List[str]) -> None:
+        self.smiles = smiles
+
+    def generate(self, number_samples: int) -> List[str]:
+        return random.choices(self.smiles, k=number_samples)
 
 
 def assess_distribution_learning(model: DistributionMatchingGenerator,
@@ -90,3 +103,43 @@ def _evaluate_distribution_learning_benchmarks(model: DistributionMatchingGenera
     logger.info('Finished execution of the benchmarks')
 
     return results
+
+
+def assess_distribution_learning_from_smiles(smiles: List[str],
+                                             chembl_training_file: str,
+                                             json_output_file: str = 'output_distribution_learning.json',
+                                             benchmark_version: str = 'v1',
+                                             number_samples: int = 10000) -> None:
+    """
+    Assesses distribution-learning benchmarks using a list of SMILES as the sampling source.
+
+    Args:
+        smiles: list of SMILES strings to sample from
+        chembl_training_file: path to ChEMBL training set, necessary for some benchmarks
+        json_output_file: Name of the file where to save the results in JSON format
+        benchmark_version: which benchmark suite to execute
+        number_samples: number of samples each benchmark should request from the generator
+    """
+    logger.info(f'Benchmarking distribution learning from SMILES, version {benchmark_version}')
+
+    generator = _SmilesListGenerator(smiles)
+
+    benchmarks = distribution_learning_benchmark_suite(
+        chembl_file_path=chembl_training_file,
+        version_name=benchmark_version,
+        number_samples=number_samples,
+    )
+
+    results = _evaluate_distribution_learning_benchmarks(model=generator, benchmarks=benchmarks)
+
+    benchmark_results: Dict[str, Any] = OrderedDict()
+    benchmark_results['guacamol_version'] = guacamol.__version__
+    benchmark_results['benchmark_suite_version'] = benchmark_version
+    benchmark_results['timestamp'] = get_time_string()
+    benchmark_results['samples'] = generator.generate(100)
+    benchmark_results['results'] = [vars(result) for result in results]
+
+    logger.info(f'Save results to file {json_output_file}')
+    with open(json_output_file, 'wt') as f:
+        f.write(json.dumps(benchmark_results, indent=4))
+

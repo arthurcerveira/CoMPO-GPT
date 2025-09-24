@@ -1,6 +1,7 @@
 target-selection/*.xml
 target-selection/*.json
 target-selection/*.smiles
+reports/
 
 venv/
 models/*.pkl
