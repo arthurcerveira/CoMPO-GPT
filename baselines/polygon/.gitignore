@@ -1,0 +1,13 @@
+*.egg-info
+log.txt
+***/__pycache__/
+polygon/molecular_generation
+build/
+data/*.pt
+data/guacamol*
+data/BindingDB*
+data/*.pkl
+data/*_active_ligands.txt
+polygon/***/*.pt
+polygon/***/*.txt
+polygon/***/*.pkl

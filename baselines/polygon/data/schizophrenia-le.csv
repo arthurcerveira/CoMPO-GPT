@@ -1,0 +1,5 @@
+category,name,minimize,mu,sigma,file,model,n_top,agg
+latent_distance,_5HT2A_vae_dist,True,1.5,0.5,./utils/ligand_binding_models/_5HT2A_active_smiles.txt,checkpoints/model.pt,20.0,mean
+latent_distance,D2R_vae_dist,True,1.5,0.5,./utils/ligand_binding_models/D2R_active_smiles.txt,checkpoints/model.pt,20.0,mean
+ligand_efficiency,_5HT2A_le,False,0.8,0.3,./utils/ligand_binding_models/_5HT2A.pkl,,,
+ligand_efficiency,D2R_le,False,0.8,0.3,./utils/ligand_binding_models/D2R.pkl,,,
