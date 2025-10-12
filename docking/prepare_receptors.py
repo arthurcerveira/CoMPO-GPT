@@ -1,4 +1,6 @@
+# apt install openbabel python3-openbabel
 # pip install biopython
+# conda install -c conda-forge openbabel vina
 import os
 from pathlib import Path
 from Bio.PDB import PDBParser, PDBIO, Select
