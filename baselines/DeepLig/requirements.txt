@@ -1,0 +1,1 @@
+dgl==2.4.0 -f https://data.dgl.ai/wheels/torch-2.4/cu121/repo.html
