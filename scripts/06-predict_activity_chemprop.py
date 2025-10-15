@@ -19,7 +19,7 @@ from assessment.chemprop_callback import (
 lg = RDLogger.logger()
 lg.setLevel(RDLogger.CRITICAL)
 
-EPOCH = 100 if len(sys.argv) < 2 else sys.argv[1]
+EPOCH = 25 if len(sys.argv) < 2 else sys.argv[1]
 GENERATED_MOLS_PATH = CURRENT_DIR / ".." / "generated_molecules" / f"{EPOCH}-epoch"
 PREDICTED_ACTIVITY_PATH = GENERATED_MOLS_PATH / "predicted_activity"
 PREDICTED_ACTIVITY_PATH.mkdir(exist_ok=True)
@@ -39,6 +39,11 @@ for path in generated_mols_paths:
 
         preds = predict_activity_chemprop(smiles, model)
         predictions[f"{model}_pXC50"] = np.array(preds)  # .flatten()
+
+    if len(predictions.columns) == 1:
+        # If there is only one column, the model did not predict any activity
+        print(f"No activity predicted for {path.stem}")
+        continue
 
     predictions.to_csv(
         GENERATED_MOLS_PATH / "predicted_activity" / f"{path.stem}.csv", index=False

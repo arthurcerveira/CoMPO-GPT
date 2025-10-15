@@ -19,7 +19,7 @@ from assessment.chemprop_callback import (
 lg = RDLogger.logger()
 lg.setLevel(RDLogger.CRITICAL)
 
-EPOCH = 100 if len(sys.argv) < 2 else sys.argv[1]
+EPOCH = 25 if len(sys.argv) < 2 else sys.argv[1]
 PREDICTED_ACTIVITY_PATH = CURRENT_DIR / ".." / "generated_molecules" / f"{EPOCH}-epoch" / "predicted_activity"
 
 # Multi-target prediction
