@@ -43,9 +43,8 @@ from polygon.utils.custom_scoring_fcn import MW
 from polygon.utils.custom_scoring_fcn import TaniSim
 from polygon.utils.custom_scoring_fcn import LigandEfficancy
 from polygon.utils.custom_scoring_fcn import MolecularActivity
-
-
-
+from polygon.utils.custom_scoring_fcn import CNS_MPO_ScoringFunction
+from polygon.utils.custom_scoring_fcn import BBBScoringFunction
 
 
 def str2bool(v):
@@ -325,6 +324,14 @@ def build_scoring_function( scoring_definition,
                                                                             minimize=row.minimize),
                                     model_path=row.file
                                     )                           
+        elif row.category == 'cnsmpo':
+            scorers[name] = CNS_MPO_ScoringFunction()
+        elif row.category == 'bbb':
+            scorers[name] = BBBScoringFunction(
+                score_modifier=MinMaxGaussianModifier( 
+                    mu=row.mu, sigma=row.sigma, minimize=row.minimize
+                ),
+            )
         else:
             print("WTF Did not understand category: {}".format(row.category))
  

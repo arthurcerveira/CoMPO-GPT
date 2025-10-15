@@ -316,7 +316,7 @@ class MoleculewiseScoringFunction(ScoringFunction):
         #     return self.corrupt_score
 
     def score_list(self, smiles_list: List[str]) -> List[float]:
-        print("Scoring class", self.__class__)
+        # print("Scoring class", self.__class__)
         return [self.score(smiles) for smiles in tqdm(smiles_list)]
 
     @abstractmethod
@@ -422,10 +422,14 @@ class ArithmeticMeanScoringFunction(BatchScoringFunction):
         scores = []
 
         for function, weight in zip(self.scoring_functions, self.weights):
+            print("Scoring function", function.__class__)
             res = function.score_list(smiles_list)
             scores.append(weight * np.array(res))
 
-        scores = np.array(scores).sum(axis=0) / np.sum(self.weights)
+        try:
+            scores = np.array(scores).sum(axis=0) / np.sum(self.weights)
+        except Exception as e:
+            breakpoint()
 
         return list(scores)
 

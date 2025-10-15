@@ -76,7 +76,8 @@ def scoring_arguments(sub_parser):
         help="Path to cell line AUC predictor model.")
     req_scoring_io.add_argument('--fscores',
         #required=True,
-        default="/dataold/cellardata/users/bpmunson/projects/bk_drug/data/fpscores.pkl.gz",
+        # default="/dataold/cellardata/users/bpmunson/projects/bk_drug/data/fpscores.pkl.gz",
+        default=None,
         action="store",
         help="Path to fscores.")
     req_scoring_io.add_argument('--opti',
@@ -186,7 +187,7 @@ def generate_parser(parser):
         help='Device to run: "cpu" or "cuda:<device number>"')
     opt_runtime.add_argument('--save_frequency',
         type=int,
-        default=5,
+        default=20,
         help='How often to save the model')
     opt_runtime.add_argument('--save_payloads',
         action="store_true",

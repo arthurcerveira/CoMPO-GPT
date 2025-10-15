@@ -11,3 +11,4 @@ data/*_active_ligands.txt
 polygon/***/*.pt
 polygon/***/*.txt
 polygon/***/*.pkl
+fpscores.pkl.gz

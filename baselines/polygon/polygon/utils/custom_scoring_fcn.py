@@ -31,6 +31,7 @@ from rdkit.Chem.Draw import SimilarityMaps
 from rdkit import DataStructs
 
 import torch
+from polygon.utils.scoring_function import MinGaussianModifier, MaxGaussianModifier, BatchScoringFunction, ScoringFunctionBasedOnRdkitMol
 
 
 class LigandEfficancy(MoleculewiseScoringFunction):
@@ -427,22 +428,22 @@ class LigandSets_truel(MoleculewiseScoringFunction):
         for fps in self.fp1:
             tani1 = TanimotoSimilarity(fp, fps)
             if( tani1 > maxs1):
-                maxs1 = tani
+                maxs1 = tani1
 
         maxs2 = 0
         for fps in self.fp2:
             tani2 = TanimotoSimilarity(fp, fps)
             if( tani2 > maxs2):
-                maxs2 = tani
+                maxs2 = tani2
 
         maxs3 = 0
         for fps in self.fp3:
             tani3 = TanimotoSimilarity(fp, fps)
             if( tani3 > maxs3):
-                maxs3 = tani
+                maxs3 = tani3
 
         tani = np.minimum(maxs1, maxs2)
-        tani = np.minimum(max3,  tani)
+        tani = np.minimum(maxs3,  tani)
 
         return np.minimum(tani, self.threshold)/self.threshold
 
@@ -457,7 +458,7 @@ class CustomTani(MoleculewiseScoringFunction):
         self.target =target_string
         target_mol = Chem.MolFromSmiles(self.target)
         if target_mol is None:
-            raise RuntimeError(f'The similarity target {target} is not a valid molecule.')
+            raise RuntimeError(f'The similarity target {self.target} is not a valid molecule.')
         self.ref_fp = AllChem.GetMorganFingerprintAsBitVect(target_mol,3,nBits=4096)
         self.threshold = 0.8
         
@@ -474,7 +475,10 @@ class SAScorer(MoleculewiseScoringFunction):
     def __init__(self, score_modifier, fscores=None):
         super().__init__(score_modifier=score_modifier)
         if fscores is None:
-            fscores = '../../data/fpscores.pkl.gz'
+            from pathlib import Path
+            # Downloaded from https://ftp.ccp4.ac.uk/ccp4/6.5/unpacked/share/RDKit/Contrib/SA_Score/fpscores.pkl.gz
+            current_dir = Path(__file__).resolve().parent
+            fscores = str(current_dir / 'fpscores.pkl.gz')
         self.fscores = cPickle.load(gzip.open(fscores ))
         outDict = {}
         for i in self.fscores:
@@ -563,3 +567,80 @@ class MW(MoleculewiseScoringFunction):
         except:
             #print('we cant calculate molecular weight', smiles )
             return -1.
+
+
+class CNS_MPO_ScoringFunction(ScoringFunctionBasedOnRdkitMol):
+    """
+    CNS MPO scoring function inspired by benchmarks.guacamol.common_scoring_functions.CNS_MPO_ScoringFunction
+    """
+
+    def __init__(self, max_logP=5.0, maxMW=360, min_tpsa=40, max_tpsa=90, max_hbd=0) -> None:
+        super().__init__()
+        self.logP_gauss = MinGaussianModifier(max_logP, 1)
+        self.molW_gauss = MinGaussianModifier(maxMW, 60)
+        self.tpsa_maxgauss = MaxGaussianModifier(min_tpsa, 20)
+        self.tpsa_mingauss = MinGaussianModifier(max_tpsa, 30)
+        self.hbd_gauss = MinGaussianModifier(max_hbd, 2.0)
+
+    def score_mol(self, mol: Chem.Mol) -> float:
+        mw = Descriptors.ExactMolWt(mol)
+        lp = Descriptors.MolLogP(mol)
+        hbd = rdMolDescriptors.CalcNumHBD(mol)
+        mol_tpsa = rdMolDescriptors.CalcTPSA(mol)
+
+        o1 = self.tpsa_mingauss(mol_tpsa)
+        o2 = self.tpsa_maxgauss(mol_tpsa)
+        o3 = self.hbd_gauss(hbd)
+        o4 = self.logP_gauss(lp)
+        o5 = self.molW_gauss(mw)
+
+        return 0.2 * (o1 + o2 + o3 + o4 + o5)
+
+
+class BBBScoringFunction(MoleculewiseScoringFunction):
+    def __init__(self, score_modifier):
+        model_path = './utils/ligand_binding_models/BBB.pkl'
+        super().__init__(score_modifier=score_modifier)
+        with open(model_path,'rb') as handle:
+            self.rfr = pickle.load(handle)
+
+    def raw_score(self, smiles: str) -> float:
+        # determine score from self.model and the given smiles string
+        m = Chem.MolFromSmiles(smiles)
+        if m is None:  # invalid SMILES
+            return 0.0
+        fp = AllChem.GetMorganFingerprintAsBitVect(m,2)
+        fp = np.array([fp])
+        bbb_score = self.rfr.predict_proba(fp)
+        return bbb_score[0]
+
+    def score_list(self, smiles_list):
+        # Convert SMILES to fingerprints
+        if smiles_list is None or len(smiles_list) == 0:
+            return []
+
+        fps = []
+        Ns = np.array([], dtype=int)
+        null_mask = np.array([], dtype=bool)
+        for smi in tqdm(smiles_list, desc='Converting SMILES to fingerprints'):
+            m = Chem.MolFromSmiles(smi)
+            if m is None:
+                fps.append(np.zeros(2048))
+                Ns = np.append(Ns, 1)
+                null_mask = np.append(null_mask, True)
+                continue
+
+            mph = Chem.AddHs(m)
+            fp = AllChem.GetMorganFingerprintAsBitVect(m,2)
+            fps.append(fp)
+            null_mask = np.append(null_mask, False)
+
+        # Predict pIC50 values
+        fps = np.array(fps)
+        bbb_scores = self.rfr.predict_proba(fps)
+
+        bbb_scores = np.array(bbb_scores)
+        # Select only the active class score
+        bbb_scores = bbb_scores[:, 1]
+        bbb_scores[null_mask] = 0.0
+        return bbb_scores

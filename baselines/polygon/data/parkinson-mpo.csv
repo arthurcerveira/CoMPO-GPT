@@ -1,5 +1,7 @@
 category,name,minimize,mu,sigma,file,model,n_top,agg
 latent_distance,D3R_vae_dist,True,1.5,0.5,./utils/ligand_binding_models/D3R_active_smiles.txt,checkpoints/model.pt,20.0,mean
 latent_distance,D2R_vae_dist,True,1.5,0.5,./utils/ligand_binding_models/D2R_active_smiles.txt,checkpoints/model.pt,20.0,mean
-ligand_efficiency,D3R_le,False,0.8,0.3,./utils/ligand_binding_models/D3R.pkl,,,
-ligand_efficiency,D2R_le,False,0.8,0.3,./utils/ligand_binding_models/D2R.pkl,,,
+molecular_activity,D3R_le,False,0.8,0.3,./utils/ligand_binding_models/D3R.pkl,,,
+molecular_activity,D2R_le,False,0.8,0.3,./utils/ligand_binding_models/D2R.pkl,,,
+cnsmpo,cnsmpo,False,0.0,0.0,,,,
+bbb,bbb,False,0.0,0.0,,,,
