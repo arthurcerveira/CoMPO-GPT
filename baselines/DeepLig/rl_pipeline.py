@@ -17,7 +17,7 @@ from utils import canonical_smiles
 from reinforcement import Reinforcement
 
 sys.path.append('./GAT/')
-from GAT import GATReward
+from GAT import GATReward, GATRewardMPO
 
 
 use_cuda = torch.cuda.is_available()
@@ -59,7 +59,7 @@ disease_to_targets = {
 }
 
 current_dir = Path(__file__).resolve().parent
-output_path = current_dir / ".." / ".." / "generated_molecules" / "DeepLig-100-512"
+output_path = current_dir / ".." / ".." / "generated_molecules" / "DeepLig"
 output_path.mkdir(exist_ok=True)
 
 
@@ -102,14 +102,19 @@ def simple_moving_average(previous_values, new_value, ma_window_size=10):
 
 if __name__ == '__main__':
     disease = sys.argv[1]  # "options: schizophrenia, alzheimer, parkinson"
-    targets = disease_to_targets[disease]
-    predict_reward = GATReward(targets)
+    disease_name, is_mpo = disease.split('_')
+    targets = disease_to_targets[disease_name]
+    if is_mpo:
+        predict_reward = GATRewardMPO(targets)
+    else:
+        predict_reward = GATReward(targets)
+    
+    print("Running DeepLig for", disease + " with MPO" if is_mpo else " without MPO")
     
     n_to_generate = 200   # Default
     n_policy_replay = 10  # Default (apparently unused)
     n_policy = 15         # Default
-    # n_iterations = 1500   # As defined in the paper
-    n_iterations = 100   # Paper defined as 1500: 100 iterations * 15 policies
+    n_iterations = 100    # Paper defined as 1500: 100 iterations * 15 policies
 
     my_generator_max = StackAugmentedRNN(input_size=gen_data.n_characters, 
                                         hidden_size=hidden_size,

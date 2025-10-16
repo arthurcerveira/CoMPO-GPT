@@ -1,47 +1,35 @@
-import torch
-import numpy as np
 from pathlib import Path
 
+import numpy as np
 from dgllife.model import GATPredictor
 from moleculenet.utils import predict
 
-from train_gat import regression_args, node_featurizer, smiles_to_g
+from train_gat import regression_args, classification_args, node_featurizer, smiles_to_g
+from gat_reward import load_gat, run_gat_on_graphs
 
-
+import sys
 current_dir = Path(__file__).resolve().parent
+sys.path.append(str(current_dir / ".." / ".." / ".." / "benchmarks"))
+from guacamol.common_scoring_functions import (
+    CNS_MPO_ScoringFunction, 
+    SyntheticAccessibilityScoringFunction
+)
+
+import os
+from rdkit import Chem
+sys.path.append(os.path.join(Chem.RDConfig.RDContribDir, 'SA_Score'))
+import sascorer
 
 
-def load_gat(target, args):
-    model = GATPredictor(in_feats=node_featurizer.feat_size(), n_tasks=1).to(args['device'])
-    state_dict = torch.load(current_dir / 'checkpoints' / f'{target}.pth')['model_state_dict']
-    model.load_state_dict(state_dict)
-    model.eval()
-    return model
-
-
-def run_gat_on_graphs(graphs, model, args):
-    predictions = list()
-
-    for mol_graph in graphs:
-        if mol_graph is None:
-            predictions.append(np.nan)
-            continue
-
-        logits = predict(args, model, mol_graph)
-        if args['task'] == 'classification':
-            # Convert logits to probabilities
-            prob = torch.sigmoid(logits).detach().cpu().numpy()[0][0]
-            predictions.append(prob)
-        else:
-            predictions.append(logits.detach().cpu().numpy()[0][0])
-
-    return predictions
-
-
-class GATReward:
+class GATRewardMPO:
     def __init__(self, targets):
         self.targets = targets
-        self.models = [load_gat(target, args) for target in targets]
+        self.target_models = [load_gat(target, regression_args) for target in targets]
+        self.bbb_model = load_gat("BBB", classification_args)
+        self.cns_mpo_scoring_function = CNS_MPO_ScoringFunction()
+        self.sascorer_function = SyntheticAccessibilityScoringFunction(
+            sascorer.calculateScore
+        )
 
     def __call__(self, smiles, predictor=None, invalid_reward=0.0):
         if not isinstance(smiles, str):
@@ -64,9 +52,29 @@ class GATReward:
         graphs = [smiles_to_g(smiles) for smiles in trajectory]
         is_nan = np.array([graph is None for graph in graphs])
 
-        predictions = np.array(
-            [run_gat_on_graphs(graphs, model, args) for model in self.models]
+        target_predictions = np.array([
+            run_gat_on_graphs(graphs, model, regression_args) 
+            for model in self.target_models
+        ])
+        # Divide target predictions by 10 to get the probability of the active class
+        target_predictions = target_predictions / 10
+        bbb_prediction = np.array(
+            [run_gat_on_graphs(graphs, self.bbb_model, classification_args)]
         )
+        cns_mpo_prediction = []
+        sascorer_prediction = []
+        for smiles in trajectory:
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is None:
+                cns_mpo_prediction.append(np.nan)
+                sascorer_prediction.append(np.nan)
+                continue
+            cns_mpo_prediction.append(self.cns_mpo_scoring_function.score_mol(mol))
+            sascorer_prediction.append(self.sascorer_function.score_mol(mol))
+
+        cns_mpo_prediction = np.array([cns_mpo_prediction])
+        sascorer_prediction = np.array([sascorer_prediction])
+
         try:
             nan_smiles = np.array(trajectory)[is_nan]
             not_nan_smiles = np.array(trajectory)[~is_nan]
@@ -75,11 +83,15 @@ class GATReward:
             breakpoint()
             # nan_smiles = np.array(trajectory)[is_nan]
             # not_nan_smiles = np.array(trajectory)[~is_nan]
-        prediction = np.mean(predictions, axis=0)
+
+        all_scores = np.concatenate([
+            target_predictions, bbb_prediction, cns_mpo_prediction, sascorer_prediction
+        ], axis=0)
+        prediction = np.mean(all_scores, axis=0)
         prediction[is_nan] = 0.0
 
-        # Clip the prediction to be between 0 and 10
-        prediction = np.clip(prediction, 0, 10)
+        # No need to clip the prediction as the scores are already normalized
+        # prediction = np.clip(prediction, 0, 10)
 
         # If running on a single trajectory, return the prediction
         if single_trajectory:
@@ -102,7 +114,7 @@ if __name__ == '__main__':
         'CC1CCC(=O)C2NC(N)=NC12',
     ]
 
-    get_reward = GATReward(['D2R', 'D3R'])
+    get_reward = GATRewardMPO(['D2R', 'D3R'])
     not_nan_smiles, prediction, nan_smiles = get_reward.predict(smiles)
     for smiles, pred in zip(smiles, prediction):
         print(f"{smiles:60s} | {pred}")

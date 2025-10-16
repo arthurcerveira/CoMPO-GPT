@@ -12,7 +12,7 @@ from dgllife.utils import EarlyStopping, Meter, SMILESToBigraph
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from utils import collate_molgraphs, load_model, predict
+from .utils import collate_molgraphs, load_model, predict
 
 def run_a_train_epoch(args, epoch, model, data_loader, loss_criterion, optimizer):
     model.train()

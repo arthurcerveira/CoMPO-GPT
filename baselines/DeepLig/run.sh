@@ -1,13 +1,13 @@
 # !/bin/bash
 set -e
 
-# cd GAT
-# bash train.sh
-# cd ..
+cd GAT
+bash train.sh
+cd ..
 
-# python pretrain.py
+python pretrain.py
 
-disease_list=(schizophrenia alzheimer parkinson)
+disease_list=(schizophrenia alzheimer parkinson schizophrenia_mpo alzheimer_mpo parkinson_mpo)
 
 for disease in ${disease_list[@]}; do
     python rl_pipeline.py $disease &
