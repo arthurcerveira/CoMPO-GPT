@@ -4,6 +4,7 @@ from rdkit import Chem
 from rdkit.Chem import Lipinski
 from rdkit.DataStructs.cDataStructs import TanimotoSimilarity
 import pandas as pd
+import numpy as np
 
 from guacamol.utils.descriptors import mol_weight, logP, num_H_donors, tpsa, num_atoms, AtomCounter
 from guacamol.utils.fingerprints import get_fingerprint
@@ -96,6 +97,8 @@ class SyntheticAccessibilityScoringFunction(ScoringFunctionBasedOnRdkitMol):
 
     def score_mol(self, mol: Chem.Mol) -> float:
         accessibility = self.accessibility_scorer(mol)
+        if accessibility is None:
+            return np.nan
 
         # Normalize accessibility score to [0,1]
         normalized_accessibility = (accessibility - self.min_score) / (self.max_score - self.min_score)

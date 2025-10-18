@@ -75,14 +75,14 @@ def _evaluate_goal_directed_benchmarks(goal_directed_molecule_generator: GoalDir
     return results
 
 
-def assess_goal_directed_from_smiles(smiles: list[str],
-                                     json_output_file='output_goal_directed.json',
+def assess_goal_directed_from_smiles(smiles_dict: dict[str, list[str]],
+                                     json_output_file=None,
                                      benchmark_version='v1') -> None:
     """
     Assesses a distribution-matching model for de novo molecule design.
 
     Args:
-        smiles: list of SMILES strings to evaluate
+        smiles_dict: dictionary mapping benchmark names to lists of SMILES strings
         json_output_file: Name of the file where to save the results in JSON format
         benchmark_version: which benchmark suite to execute
     """
@@ -93,7 +93,14 @@ def assess_goal_directed_from_smiles(smiles: list[str],
     for i, benchmark in enumerate(benchmarks, 1):
         logger.info(f'Running benchmark {i}/{len(benchmarks)}: {benchmark.name}')
         print(f'Running benchmark {i}/{len(benchmarks)}: {benchmark.name}')
-        result = benchmark.assess_smiles(smiles)
+        
+        # Get SMILES list for this benchmark
+        benchmark_smiles = smiles_dict.get(benchmark.name, [])
+        if not benchmark_smiles:
+            logger.warning(f'No SMILES found for benchmark {benchmark.name}')
+            continue
+            
+        result = benchmark.assess_smiles(benchmark_smiles)
         logger.info(f'Results for the benchmark "{result.benchmark_name}":')
         print(f'  Score: {result.score:.6f}')
         logger.info(f'  Execution time: {str(datetime.timedelta(seconds=int(result.execution_time)))}')
@@ -106,6 +113,9 @@ def assess_goal_directed_from_smiles(smiles: list[str],
     benchmark_results['benchmark_suite_version'] = benchmark_version
     benchmark_results['timestamp'] = get_time_string()
     benchmark_results['results'] = [vars(result) for result in results]
+
+    if json_output_file is None:
+        return benchmark_results
 
     logger.info(f'Save results to file {json_output_file}')
     with open(json_output_file, 'wt') as f:

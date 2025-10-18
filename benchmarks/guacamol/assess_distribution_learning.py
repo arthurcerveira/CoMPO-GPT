@@ -10,6 +10,7 @@ from guacamol.distribution_learning_benchmark import DistributionLearningBenchma
 from guacamol.distribution_matching_generator import DistributionMatchingGenerator
 from guacamol.benchmark_suites import distribution_learning_benchmark_suite
 from guacamol.utils.data import get_time_string
+from guacamol.utils.chemistry import is_valid, canonicalize_list
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -23,9 +24,20 @@ class _SmilesListGenerator(DistributionMatchingGenerator):
     def __init__(self, smiles: List[str]) -> None:
         self.smiles = smiles
 
-    def generate(self, number_samples: int) -> List[str]:
-        return random.choices(self.smiles, k=number_samples)
+    def generate(self, number_samples=None, only_valid: bool = False, only_unique: bool = False) -> List[str]:
+        smiles = self.smiles
 
+        if only_valid:
+            smiles = [smi for smi in smiles if is_valid(smi)]
+
+        if only_unique:
+            smiles = list(set(canonicalize_list(smiles, include_stereocenters=False)))
+        
+        if number_samples is None:
+            return smiles
+        
+        return random.sample(smiles, k=number_samples)
+    
 
 def assess_distribution_learning(model: DistributionMatchingGenerator,
                                  chembl_training_file: str,
@@ -107,7 +119,7 @@ def _evaluate_distribution_learning_benchmarks(model: DistributionMatchingGenera
 
 def assess_distribution_learning_from_smiles(smiles: List[str],
                                              chembl_training_file: str,
-                                             json_output_file: str = 'output_distribution_learning.json',
+                                             json_output_file: str = None,
                                              benchmark_version: str = 'v1',
                                              number_samples: int = 10000) -> None:
     """
@@ -138,6 +150,9 @@ def assess_distribution_learning_from_smiles(smiles: List[str],
     benchmark_results['timestamp'] = get_time_string()
     benchmark_results['samples'] = generator.generate(100)
     benchmark_results['results'] = [vars(result) for result in results]
+
+    if json_output_file is None:
+        return benchmark_results
 
     logger.info(f'Save results to file {json_output_file}')
     with open(json_output_file, 'wt') as f:

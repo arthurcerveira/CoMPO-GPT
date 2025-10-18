@@ -66,16 +66,19 @@ class ValidityBenchmark(DistributionLearningBenchmark):
 
     def assess_model(self, model: DistributionMatchingGenerator) -> DistributionLearningBenchmarkResult:
         start_time = time.time()
-        molecules = model.generate(number_samples=self.number_samples)
+        # molecules = model.generate(number_samples=self.number_samples)
+        # [Arthur] Verifiy validity of all generated molecules
+        molecules = model.generate(number_samples=None, only_valid=False)
         end_time = time.time()
 
-        if len(molecules) != self.number_samples:
-            raise Exception('The model did not generate the correct number of molecules')
+        # if len(molecules) != self.number_samples:
+        #     raise Exception('The model did not generate the correct number of molecules')
 
         number_valid = sum(1 if is_valid(smiles) else 0 for smiles in molecules)
-        validity_ratio = number_valid / self.number_samples
+        number_samples = len(molecules)
+        validity_ratio = number_valid / number_samples  # self.number_samples
         metadata = {
-            'number_samples': self.number_samples,
+            'number_samples': number_samples,  # self.number_samples
             'number_valid': number_valid,
         }
 
@@ -95,18 +98,22 @@ class UniquenessBenchmark(DistributionLearningBenchmark):
 
     def assess_model(self, model: DistributionMatchingGenerator) -> DistributionLearningBenchmarkResult:
         start_time = time.time()
-        molecules = sample_valid_molecules(model=model, number_molecules=self.number_samples)
+        # molecules = sample_valid_molecules(model=model, number_molecules=self.number_samples)
+        # [Arthur] Verifiy uniqueness of all valid generated molecules
+        molecules = model.generate(number_samples=None, only_valid=True)
         end_time = time.time()
+        number_samples = len(molecules)
 
-        if len(molecules) != self.number_samples:
-            logger.warning('The model could not generate enough valid molecules. The score will be penalized.')
+        # if len(molecules) != self.number_samples:
+        #     print(f"[UniquenessBenchmark] The model could not generate enough valid molecules. The score will be penalized.")
+        #     logger.warning('The model could not generate enough valid molecules. The score will be penalized.')
 
         # canonicalize_list removes duplicates (and invalid molecules, but there shouldn't be any)
         unique_molecules = canonicalize_list(molecules, include_stereocenters=False)
 
-        unique_ratio = len(unique_molecules) / self.number_samples
+        unique_ratio = len(unique_molecules) / number_samples  # self.number_samples
         metadata = {
-            'number_samples': self.number_samples,
+            'number_samples': number_samples,  # self.number_samples
             'number_unique': len(unique_molecules)
         }
 
@@ -134,21 +141,25 @@ class NoveltyBenchmark(DistributionLearningBenchmark):
             model: model to assess
         """
         start_time = time.time()
-        molecules = sample_unique_molecules(model=model, number_molecules=self.number_samples, max_tries=2)
+        # molecules = sample_unique_molecules(model=model, number_molecules=self.number_samples, max_tries=2)
+        # [Arthur] Verify novelty of valid and unique generated molecules
+        molecules = model.generate(number_samples=None, only_valid=True, only_unique=True)
         end_time = time.time()
 
-        if len(molecules) != self.number_samples:
-            logger.warning('The model could not generate enough unique molecules. The score will be penalized.')
+        # if len(molecules) != self.number_samples:
+        #     print(f"[NoveltyBenchmark] The model could not generate enough unique molecules. The score will be penalized.")
+        #     logger.warning('The model could not generate enough unique molecules. The score will be penalized.')
+        #     breakpoint()
 
         # canonicalize_list in order to remove stereo information (also removes duplicates and invalid molecules, but there shouldn't be any)
         unique_molecules = set(canonicalize_list(molecules, include_stereocenters=False))
 
         novel_molecules = unique_molecules.difference(self.training_set_molecules)
-
-        novel_ratio = len(novel_molecules) / self.number_samples
+        number_samples = len(molecules)
+        novel_ratio = len(novel_molecules) / number_samples  # self.number_samples
 
         metadata = {
-            'number_samples': self.number_samples,
+            'number_samples': number_samples,  # self.number_samples
             'number_novel': len(novel_molecules)
         }
 
@@ -192,11 +203,14 @@ class KLDivBenchmark(DistributionLearningBenchmark):
             model: model to assess
         """
         start_time = time.time()
-        molecules = sample_unique_molecules(model=model, number_molecules=self.number_samples, max_tries=2)
+        # molecules = sample_unique_molecules(model=model, number_molecules=self.number_samples, max_tries=2)
+        # [Arthur] Verify KLDiv of valid and unique generated molecules
+        molecules = model.generate(number_samples=None, only_valid=True, only_unique=True)
         end_time = time.time()
 
-        if len(molecules) != self.number_samples:
-            logger.warning('The model could not generate enough unique molecules. The score will be penalized.')
+        # if len(molecules) != self.number_samples:
+        #     print(f"[KLDivBenchmark] The model could not generate enough unique molecules. The score will be penalized.")
+        #     logger.warning('The model could not generate enough unique molecules. The score will be penalized.')
 
         # canonicalize_list in order to remove stereo information (also removes duplicates and invalid molecules, but there shouldn't be any)
         unique_molecules = set(canonicalize_list(molecules, include_stereocenters=False))

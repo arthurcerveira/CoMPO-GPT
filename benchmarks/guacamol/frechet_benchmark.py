@@ -44,11 +44,13 @@ class FrechetBenchmark(DistributionLearningBenchmark):
         chemnet = self._load_chemnet()
 
         start_time = time.time()
-        generated_molecules = sample_valid_molecules(model=model, number_molecules=self.number_samples)
+        # generated_molecules = sample_valid_molecules(model=model, number_molecules=self.number_samples)
+        # [Arthur] Verify Frechet of valid generated molecules
+        generated_molecules = model.generate(number_samples=None, only_valid=True)
         end_time = time.time()
 
-        if len(generated_molecules) != self.number_samples:
-            logger.warning('The model could not generate enough valid molecules.')
+        # if len(generated_molecules) != self.number_samples:
+        #     logger.warning('The model could not generate enough valid molecules.')
 
         mu_ref, cov_ref = self._calculate_distribution_statistics(chemnet, self.reference_molecules)
         mu, cov = self._calculate_distribution_statistics(chemnet, generated_molecules)

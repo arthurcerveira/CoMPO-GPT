@@ -55,7 +55,7 @@ def alzheimer_mpo_benchmark() -> GoalDirectedBenchmark:
 
     specification = uniform_specification(1, 10, 100)
     return GoalDirectedBenchmark(
-        name='Alzheimer MPO',
+        name='alzheimer',
         objective=mean_scorer,
         contribution_specification=specification
     )
@@ -95,7 +95,7 @@ def schizophrenia_mpo_benchmark() -> GoalDirectedBenchmark:
     specification = uniform_specification(1, 10, 100)
 
     return GoalDirectedBenchmark(
-        name='Schizophrenia MPO',
+        name='schizophrenia',
         objective=mean_scorer,
         contribution_specification=specification
     )
@@ -134,7 +134,7 @@ def parkinson_mpo_benchmark() -> GoalDirectedBenchmark:
     specification = uniform_specification(1, 10, 100)
 
     return GoalDirectedBenchmark(
-        name='Parkinson MPO',
+        name='parkinson',
         objective=mean_scorer,
         contribution_specification=specification
     )
