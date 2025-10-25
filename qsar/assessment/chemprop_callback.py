@@ -14,6 +14,7 @@ from torch import Tensor
 torch.set_float32_matmul_precision("high")
 
 # Suppress warnings
+# Comment out: <env>/lib/python3.12/site-packages/lightning/pytorch/accelerators/cuda.py
 from pytorch_lightning.utilities import rank_zero
 rank_zero.rank_zero_info = lambda *a, **k: None
 import logging

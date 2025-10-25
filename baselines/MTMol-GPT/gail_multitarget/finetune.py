@@ -37,25 +37,20 @@ def main(cfg: DictConfig):
 
     task_config.use_selfies = False
 
-    # if task_config.use_selfies:
-    #     vocab = selfies_tokens_struct()
-    #     drd2_path = os.path.join(root_path, config.target.target1.train_sf_path)
-    #     htr1a_path = os.path.join(root_path, config.target.target2.train_sf_path)
-    #     model_name = 'MLE_best_generator.pt'
-    # else:
     vocab = tokens_struct()
-    drd2_path = os.path.join(root_path, config.target.target1.train_path)
-    htr1a_path = os.path.join(root_path, config.target.target2.train_path)
+    t1_path = os.path.join(root_path, config.target.target1.train_path)
+    t2_path = os.path.join(root_path, config.target.target2.train_path)
     model_name = 'Prior_DLGN.ckpt'
 
-    drd2_train_data = pd.read_csv(drd2_path, index_col=False, header=None)
-    htr1a_train_data = pd.read_csv(htr1a_path, index_col=False, header=None)
+    t1_train_data = pd.read_csv(t1_path, index_col=False, header=None)
+    t2_train_data = pd.read_csv(t2_path, index_col=False, header=None)
 
-    drd2_valid_path = os.path.join(root_path, config.target.target1.valid_path)
-    htr1a_valid_path = os.path.join(root_path, config.target.target2.valid_path)
-    drd2_valid_data = pd.read_csv(drd2_valid_path, index_col=False, header=None)
-    htr1a_valid_data = pd.read_csv(htr1a_valid_path, index_col=False, header=None)
+    t1_valid_path = os.path.join(root_path, config.target.target1.valid_path)
+    t2_valid_path = os.path.join(root_path, config.target.target2.valid_path)
+    t1_valid_data = pd.read_csv(t1_valid_path, index_col=False, header=None)
+    t2_valid_data = pd.read_csv(t2_valid_path, index_col=False, header=None)
 
+    # Apparently not used in fine-tuning (SVM activity prediction)
     # drd2 = predict_model(os.path.join(root_path, f'data/DLGN/SVM/best_drd2_svm.m'))
     # htr1a = predict_model(os.path.join(root_path, f'data/DLGN/SVM/best_htr1a_svm.m'))
     model = SmilesGAILModel(config, vocab)
@@ -66,12 +61,13 @@ def main(cfg: DictConfig):
     task_config.use_wandb = False
     if task_config.use_wandb:
         wandb.init(project="multitarget", name='drd2_htr1a_aug_Da_Dlr1e5_Glr3e5_sf')
-        wandb.log({'drd2_dataset_num': len(drd2_train_data), 'htr1a_dataset_num': len(htr1a_train_data)})
+        wandb.log({'t1_dataset_num': len(t1_train_data), 't2_dataset_num': len(t2_train_data)})
     trainer = GAILTrainerLoop(task_config, vocab, model=model,
                               reward_func=reward_func, device=device,
-                              dataset1=drd2_train_data, dataset2=htr1a_train_data,
-                              valid_dataset1=drd2_valid_data, valid_dataset2=htr1a_valid_data)
-    # trainer.train(os.path.join(output_path, task_config.save_path), drd2, htr1a)
+                              dataset1=t1_train_data, dataset2=t2_train_data,
+                              valid_dataset1=t1_valid_data, valid_dataset2=t2_valid_data)
+
+    # trainer.train(os.path.join(output_path, task_config.save_path), t1, t2)
     scenario = config.target.name
     trainer.train(scenario, None, None)
 

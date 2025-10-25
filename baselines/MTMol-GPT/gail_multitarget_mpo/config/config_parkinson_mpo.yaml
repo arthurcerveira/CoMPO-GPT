@@ -1,0 +1,8 @@
+defaults:
+    - target: parkinson_mpo
+    - prop : prop
+    - model: model
+    - train: train
+    - generation: generation
+chembl_sf_data_path: 'data/DLGN/Chembl24_sf.txt'
+chembl_sm_data_path: 'data/DLGN/Chembl24.txt'
