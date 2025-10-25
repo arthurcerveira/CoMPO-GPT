@@ -129,16 +129,17 @@ class GoalDirectedBenchmark:
         number_molecules_to_generate = max(self.contribution_specification.top_counts)
         
         # Select sameple of molecules from smiles
-        molecules = np.random.choice(smiles, number_molecules_to_generate)
+        molecules = np.random.choice(smiles, number_molecules_to_generate, replace=False)
         canonicalized_molecules = canonicalize_list(molecules, include_stereocenters=False)
         unique_molecules = remove_duplicates(canonicalized_molecules)
         scores = self.objective.score_list(unique_molecules)
 
         if len(unique_molecules) != number_molecules_to_generate:
             number_missing = number_molecules_to_generate - len(unique_molecules)
-            logger.warning(f'An incorrect number of distinct molecules was generated: '
-                           f'{len(unique_molecules)} instead of {number_molecules_to_generate}. '
-                           f'Padding scores with {number_missing} zeros...')
+            print(f"{self.name}: {len(unique_molecules)} instead of {number_molecules_to_generate}")
+            print(f"[WARNING] An incorrect number of distinct molecules was generated: "
+                  f"{len(unique_molecules)} instead of {number_molecules_to_generate}. "
+                  f"Padding scores with {number_missing} zeros...")
             scores.extend([0.0] * number_missing)
 
         global_score, top_x_dict = compute_global_score(self.contribution_specification, scores)

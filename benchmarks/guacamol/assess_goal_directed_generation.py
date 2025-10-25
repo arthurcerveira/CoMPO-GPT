@@ -97,7 +97,7 @@ def assess_goal_directed_from_smiles(smiles_dict: dict[str, list[str]],
         # Get SMILES list for this benchmark
         benchmark_smiles = smiles_dict.get(benchmark.name, [])
         if not benchmark_smiles:
-            logger.warning(f'No SMILES found for benchmark {benchmark.name}')
+            print(f"[WARNING] No SMILES found for benchmark {benchmark.name}")
             continue
             
         result = benchmark.assess_smiles(benchmark_smiles)
