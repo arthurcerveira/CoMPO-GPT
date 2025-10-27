@@ -5,8 +5,6 @@ from pathlib import Path
 from Bio.PDB import PDBParser
 import numpy as np
 import json
-from vina import Vina
-import os
 
 
 CONFIG_TEMPLATE = """
