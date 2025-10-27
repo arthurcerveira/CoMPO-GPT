@@ -2,80 +2,12 @@ import subprocess
 from pathlib import Path
 from itertools import product
 
-from tqdm import tqdm
-from rdkit import Chem
-from rdkit.Chem import AllChem
-
 
 # Directories
 receptors_dir = Path("receptors")
 ligands_dir = Path("ligands")
 results_dir = Path("poses")
 results_dir.mkdir(exist_ok=True)
-
-
-def smiles_to_pdbqt(smiles, out_path):
-    """Convert SMILES to 3D PDBQT format using RDKit and Open Babel."""
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        raise ValueError(f"Invalid SMILES: {smiles}")
-    
-    mol = Chem.AddHs(mol)
-    AllChem.EmbedMolecule(mol, randomSeed=42)
-    AllChem.UFFOptimizeMolecule(mol)
-    
-    # Create temporary PDB file in the same directory as output
-    tmp_pdb = out_path.with_suffix(".pdb")
-    
-    try:
-        Chem.MolToPDBFile(mol, str(tmp_pdb))
-        
-        # Convert PDB -> PDBQT using Open Babel
-        cmd = ["obabel", str(tmp_pdb), "-O", str(out_path), "-xh"]
-        # Suppress stdout
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    finally:
-        # Clean up temporary PDB file
-        if tmp_pdb.exists():
-            tmp_pdb.unlink()
-
-
-def convert_smiles_to_pdbqt(smiles_list, total_smiles, ligand_prefix="lig"):
-    """
-    Convert all SMILES to PDBQT files and return the paths.
-    
-    Args:
-        smiles_list: List of SMILES strings
-        ligand_prefix: Prefix for ligand names (used as baseline name)
-    
-    Returns:
-        List of PDBQT file paths
-    """
-    # Create ligands directory structure: ./ligands/{baseline}/
-    ligands_baseline_dir = ligands_dir / ligand_prefix
-    ligands_baseline_dir.mkdir(parents=True, exist_ok=True)
-    
-    pdbqt_files = []
-    valid_counter = 0
-    print(f"Converting {len(smiles_list)} SMILES to PDBQT files...")
-
-    for i, smiles in enumerate(smiles_list):
-        ligand_pdbqt = ligands_baseline_dir / f"{i+1}.pdbqt"
-        
-        try:
-            smiles_to_pdbqt(smiles, ligand_pdbqt)
-            pdbqt_files.append(ligand_pdbqt)
-            print(f"  ✓ {i+1}/{len(smiles_list)}: {smiles[:30]}...")
-            valid_counter += 1
-        except Exception as e:
-            print(f"  ✗ {i+1}/{len(smiles_list)}: Failed to convert {smiles[:30]}... - {e}")
-            continue
-
-        if valid_counter >= total_smiles:
-            break
-
-    print(f"Successfully converted {len(pdbqt_files)}/{total_smiles} SMILES to PDBQT")
-    return pdbqt_files
 
 
 def generate_docking_commands(pdbqt_files, target_receptors, output_dir, ligand_prefix="lig"):
@@ -159,7 +91,8 @@ def generate_bash_script(commands, output_dir, max_workers=1, script_name="run_d
         f.write(f"# Generated on: {subprocess.run(['date'], capture_output=True, text=True).stdout.strip()}\n\n")
         
         f.write("set -e  # Exit on any error\n\n")
-        
+
+        f.write('VINA_EXEC="/home/aacerveira/docking/vina_1.2.7_linux_x86_64"\n')
         f.write("# Function to run a single docking task\n")
         f.write("run_docking_task() {\n")
         f.write("    local ligand_pdbqt=\"$1\"\n")
@@ -173,7 +106,7 @@ def generate_bash_script(commands, output_dir, max_workers=1, script_name="run_d
         f.write("    echo \"Starting docking: $ligand_name → $receptor_name\"\n")
         f.write("    \n")
         f.write("    # Run Vina (ligand PDBQT file already exists)\n")
-        f.write("    vina --receptor \"$receptor_file\" --ligand \"$ligand_pdbqt\" --config \"$config_file\" --out \"$output_file\" --verbosity 2 > \"$log_file\" 2>&1\n")
+        f.write("    $VINA_EXEC --receptor \"$receptor_file\" --ligand \"$ligand_pdbqt\" --config \"$config_file\" --out \"$output_file\" --verbosity 2 > \"$log_file\" 2>&1\n")
         f.write("    \n")
         f.write("    echo \"Completed: $ligand_name → $receptor_name\"\n")
         f.write("}\n\n")
@@ -218,12 +151,12 @@ def generate_bash_script(commands, output_dir, max_workers=1, script_name="run_d
     return script_path
 
 
-def docking_experiment_script(smiles_list, total_smiles, target_receptors, output_dir, ligand_prefix="lig", max_workers=None):
+def docking_experiment_script(pdbqt_files, target_receptors, output_dir, ligand_prefix="lig", max_workers=None):
     """
-    Create docking experiments scripts for a list of SMILES against specified receptors.
+    Create docking experiment scripts for prepared PDBQT ligands against specified receptors.
     
     Args:
-        smiles_list: List of SMILES strings
+        pdbqt_files: List of PDBQT file paths
         target_receptors: List of receptor names (without .pdbqt extension)
         output_dir: Directory to save results
         ligand_prefix: Prefix for ligand names
@@ -238,20 +171,17 @@ def docking_experiment_script(smiles_list, total_smiles, target_receptors, outpu
     if max_workers is None:
         max_workers = 1
     
-    print(f"Processing {len(smiles_list)} molecules against {len(target_receptors)} targets")
-    print(f"Total docking tasks: {len(smiles_list) * len(target_receptors)}")
+    if not pdbqt_files:
+        raise ValueError("No prepared ligand files were provided")
+
+    print(f"Processing {len(pdbqt_files)} molecules against {len(target_receptors)} targets")
+    print(f"Total docking tasks: {len(pdbqt_files) * len(target_receptors)}")
     print(f"Max workers: {max_workers}")
     
-    # Step 1: Convert SMILES to PDBQT files
-    pdbqt_files = convert_smiles_to_pdbqt(smiles_list, total_smiles, ligand_prefix)
-    
-    if not pdbqt_files:
-        raise ValueError("No SMILES were successfully converted to PDBQT")
-    
-    # Step 2: Generate docking commands
+    # Generate docking commands
     commands = generate_docking_commands(pdbqt_files, target_receptors, output_dir, ligand_prefix)
     
-    # Step 3: Generate bash script
+    # Generate bash script
     script_name = f"docking_{ligand_prefix}_{len(commands)}_tasks.sh"
     script_path = generate_bash_script(commands, output_dir, max_workers, script_name)
     
