@@ -1,5 +1,8 @@
 #!bin/bash
 
+# To avoid out of VRAM errors
+# export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
+
 # Make sure we are in parent directory of script directory
 cd "$(dirname "$0")"/..
 pwd
