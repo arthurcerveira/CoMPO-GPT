@@ -13,6 +13,8 @@ generated_molecules/*/*_MEAN.csv
 
 models_cMolGPT/*.h5_*
 *.png
+*.svg
+*.html
 
 !figures/Architecture.png
 *.h5
@@ -20,3 +22,8 @@ models_cMolGPT/*.h5_*
 
 ignore/
 data/training_files/
+
+docking/receptors/
+docking/ligands/
+docking/results/
+docking/poses*/
