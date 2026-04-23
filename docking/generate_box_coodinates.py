@@ -84,7 +84,8 @@ def determine_docking_box(pdb_file):
 def main():
     targets = {
         "_5HT2A": "6A93",
-        "D2R": "6CM4",
+        # "D2R": "6CM4",
+        "D2R": "6LUQ",
         "D3R": "3PBL",
         "AChE": "4EY7",
         "MAOB": "2V5Z",

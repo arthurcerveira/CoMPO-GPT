@@ -92,7 +92,8 @@ def generate_bash_script(commands, output_dir, max_workers=1, script_name="run_d
         
         f.write("set -e  # Exit on any error\n\n")
 
-        f.write('VINA_EXEC="/home/aacerveira/docking/vina_1.2.7_linux_x86_64"\n')
+        # f.write('VINA_EXEC="/home/aacerveira/docking/vina_1.2.7_linux_x86_64"\n')
+        f.write('VINA_EXEC="vina"\n')
         f.write("# Function to run a single docking task\n")
         f.write("run_docking_task() {\n")
         f.write("    local ligand_pdbqt=\"$1\"\n")

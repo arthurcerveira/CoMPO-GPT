@@ -14,7 +14,8 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # PDB IDs for each target
 TARGETS = {
     "_5HT2A": "6A93",          # 5-HT2A receptor (with risperidone)
-    "D2R": "6CM4",           # Dopamine D2 receptor
+    # "D2R": "6CM4",           # Dopamine D2 receptor
+    "D2R": "6LUQ",           # Dopamine D2 receptor
     "D3R": "3PBL",           # Dopamine D3 receptor
     "AChE": "4EY7",           # Human acetylcholinesterase
     "MAOB": "2V5Z",           # Monoamine oxidase B
