@@ -2,10 +2,9 @@
 set -e
 
 cd gail_multitarget/
-# python pretrain.py
+python pretrain.py
 
-# disease_list=(schizophrenia alzheimer parkinson)
-disease_list=(alzheimer)
+disease_list=(schizophrenia alzheimer parkinson)
 
 for disease in ${disease_list[@]}; do
     python finetune.py --config-path=config --config-name=config_${disease}
